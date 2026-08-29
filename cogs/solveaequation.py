@@ -46,6 +46,5 @@ class solveaequation(commands.Cog):
     async def solve(self, ctx: commands.Context, a:int, b:int, c:int, float:bool = True):
             await ctx.send(f'x = {self.formula(a, b, c, float)}')
 
-# 每個 Cog 檔案底部一定要有這個 setup 函式
 async def setup(bot: commands.Bot):
     await bot.add_cog(solveaequation(bot))

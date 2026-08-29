@@ -311,3 +311,29 @@ wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as i
 discord.ext.commands.errors.CommandNotFound: Command "queue" is not found
 
 ------------------------------------------------------------
+[2026-08-29 13:33:42] baomigua (697093121879572500) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*ezwordle
+discord.ext.commands.errors.CommandNotFound: Command "ezwordle" is not found
+
+------------------------------------------------------------
+[2026-08-29 13:59:56] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+### h
+discord.ext.commands.errors.CommandNotFound: Command "##" is not found
+
+------------------------------------------------------------
+[2026-08-29 14:01:04] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*reload
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 1056, in invoke
+    await self.prepare(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 973, in prepare
+    await self._parse_arguments(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 880, in _parse_arguments
+    transformed = await self.transform(ctx, param, attachments)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 732, in transform
+    raise MissingRequiredArgument(param)
+discord.ext.commands.errors.MissingRequiredArgument: cog_name is a required argument that is missing.
+
+------------------------------------------------------------

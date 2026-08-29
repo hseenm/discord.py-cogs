@@ -22,6 +22,5 @@ class Example(commands.Cog):
         if emoji.animated == True: a ='a'
         await interaction.response.send_message(content=f'神啊千分萬分感謝您的大恩大德，主的徽章又活了起來<{a}:{emoji.name}:{emoji.id}>\n哦話說徽章已經被discord拔掉了，這個指令目前0意義')
 
-# 每個 Cog 檔案底部一定要有這個 setup 函式
 async def setup(bot: commands.Bot):
     await bot.add_cog(Example(bot))

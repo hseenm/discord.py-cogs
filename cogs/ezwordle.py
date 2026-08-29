@@ -19,20 +19,8 @@ import copy
 
 detecting = False
 
-#nltk.download('words')
-#nltk.download('brown')
-#nltk.download('punkt')
-#nltk.download('wordnet')
-#nltk.download('omw-1.4')
-#enchant_dict = enchant.Dict("en_US")
-#enchant_dictb = enchant.Dict("en_GB")
-
 # 從 brown 詞庫建立一份詞表（轉小寫、去重）
 brown_words = set(word.lower() for word in nltk_words.words())
-
-
-
-
 
 class ezwordle(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -71,7 +59,7 @@ class ezwordle(commands.Cog):
     async def ezwordle(self, interaction: discord.Interaction, answercount:str = None, threads: bool = None):
         global detecting
         if detecting == True:
-            await interaction.response.send_message(content='請先使用`我認輸，可以給答案了`或者將單字猜出來結束上一場遊戲')
+            await interaction.response.send_message(content=f'請先使用`我認輸，可以給答案了`或者將單字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>')
         elif detecting == False:
             if threads == True:
                 threadhint = '隨後請於機器人創立的討論串中進行猜答\n'
@@ -93,6 +81,8 @@ class ezwordle(commands.Cog):
                                                 請使用小寫字母
                                                 出現的單字將是 **{answercount}** 個字母{chance}
                                                 在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲
+                                                -# 因為 iOS 系統原因，正確字母之 emoji 不會正常顯示
+                                                -# 建議遊玩系統為 Windows 以及 Android
                                                 ''')
             await interaction.response.send_message(embed=embed)
             detecting = True
@@ -225,6 +215,5 @@ class ezwordle(commands.Cog):
                     #await asyncio.sleep(1)
                     await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**', silent=True)
 
-# 每個 Cog 檔案底部一定要有這個 setup 函式
 async def setup(bot: commands.Bot):
     await bot.add_cog(ezwordle(bot))

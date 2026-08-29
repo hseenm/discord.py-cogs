@@ -25,6 +25,5 @@ class CACs(commands.Cog):
         embed = discord.Embed(description=description, color=0x00BFFF)
         await ctx.send(embed=embed)
 
-# 每個 Cog 檔案底部一定要有這個 setup 函式
 async def setup(bot: commands.Bot):
     await bot.add_cog(CACs(bot))

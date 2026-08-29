@@ -5,6 +5,7 @@ from discord.ext import commands
 import json
 import random
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 class tof(discord.ui.View):
     def __init__(self, answer, timeout=180):
@@ -108,7 +109,7 @@ class opt(discord.ui.View):
             child.disabled = True
         await interaction.response.edit_message(view=self)
 
-class exam(commands.Cog):
+class Exam(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -118,21 +119,43 @@ class exam(commands.Cog):
     def load_opt(self):
             with open("./data/optional.json", "r", encoding="utf-8") as f:
                 return json.load(f)
+    def load_car(self):
+                with open("./data/car.json", "r", encoding="utf-8") as f:
+                    return json.load(f)
 
     @app_commands.command(name='exam', description='考個駕照吧')
-    async def exam(self, interaction: discord.Interaction):
-        tiku = random.choice([self.load_tof(), self.load_opt()])
-        item = random.choice(tiku)
-        if tiku is self.load_tof():
-            view=tof(item["answer"])
-            content = '是非題'
-        elif tiku is self.load_opt():
+    @app_commands.choices(
+        types = [
+            app_commands.Choice(name="機車考題", value="moto"),
+            app_commands.Choice(name="汽車考題", value="car"),
+        ]
+    )
+    async def exam(self, interaction: discord.Interaction, types:Optional[app_commands.Choice[str]] = None):
+        if types == None:
+            tiku = random.choice(['moto', 'car'])
+        else:
+            tiku = None
+        if tiku == 'moto' or types.value == 'moto':
+            tiku = random.choice(['tof', 'opt'])
+            if tiku == 'tof':
+                item = random.choice(self.load_tof())
+            else:
+                item = random.choice(self.load_opt())
+            if tiku == 'tof':
+                view=tof(item["answer"])
+                content = '法規是非題.'
+            elif tiku == 'opt':
+                view=opt(item["answer"])
+                content = '法規選擇題.'
+            title = '中華民國公路局-機車駕照筆試題庫'
+        else:
+            item = random.choice(self.load_car())
             view=opt(item["answer"])
-            content = '選擇題'
-        embed = discord.Embed(color=0xF27D72, title=f'📜 | 中華民國公路局-機車駕照筆試題庫(法規{content}.`{item["number"]}`)', description=f'```\n{item["question"]}\n```',timestamp=datetime.now())
+            content = ''
+            title = '中華民國公路局-新版汽車筆試題庫'
+        embed = discord.Embed(color=0xF27D72, title=f'📜 | {title}({content}`{item["number"]}`)', description=f'```\n{item["question"]}\n```',timestamp=datetime.now())
         embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/1329781718554775572.png?size=160',text='祝你考試順利')
         await interaction.response.send_message(embed=embed, view=view)
 
-# 每個 Cog 檔案底部一定要有這個 setup 函式
 async def setup(bot: commands.Bot):
-    await bot.add_cog(exam(bot))
+    await bot.add_cog(Exam(bot))

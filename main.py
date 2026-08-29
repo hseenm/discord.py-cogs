@@ -32,10 +32,15 @@ async def on_ready():
 @bot.command()
 @commands.is_owner()  # 限制只有機器人擁有者可以執行
 async def reload(ctx: commands.Context, cog_name: str):
-    await ctx.send(f"正在重新整理...")
+    theMessage1 = await ctx.send(f"正在重新整理...")
+    await ctx.message.delete()
+    await asyncio.sleep(5)
+    await theMessage1.delete()
     try:
         await bot.reload_extension(f"cogs.{cog_name}")
-        await ctx.send(f"✅ 成功重新載入模組：`{cog_name}`")
+        theMessage2 = await ctx.send(f"✅ 成功重新載入模組：`{cog_name}`")
+        await asyncio.sleep(5)
+        await theMessage2.delete()
     except Exception as e:
         await ctx.send(f"❌ 載入模組 `{cog_name}` 失敗：\n```{e}```")
 

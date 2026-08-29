@@ -32,7 +32,5 @@ class on_command_error(commands.Cog):
             embed = discord.Embed(color=0xFF3C3C, title='🛑 | 錯誤 Error', description=description)
             await ctx.send(embed=embed)
 
-
-# 每個 Cog 檔案底部一定要有這個 setup 函式
 async def setup(bot: commands.Bot):
     await bot.add_cog(on_command_error(bot))
