@@ -76,14 +76,7 @@ class ezwordle(commands.Cog):
             #answercount = random.choice([3, 4, 5, 5, 6, 6, 6])
             embed = discord.Embed(  colour=0xf4cc3a, 
                                     title ='<:cjzcj04m3:1220986072906076170> | Wordle',
-                                    description=f'''
-                                                {threadhint}隨機有點久，請耐心等候，當機器人傳“**開始遊戲**”時，即開始遊戲
-                                                請使用小寫字母
-                                                出現的單字將是 **{answercount}** 個字母{chance}
-                                                在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲
-                                                -# 因為 iOS 系統原因，正確字母之 emoji 不會正常顯示
-                                                -# 建議遊玩系統為 Windows 以及 Android
-                                                ''')
+                                    description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲\n因為 iOS 系統原因，正確字母之 emoji 不會正常顯示\n建議遊玩系統為 Windows 以及 Android')
             await interaction.response.send_message(embed=embed)
             detecting = True
             if threads == True:

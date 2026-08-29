@@ -337,3 +337,13 @@ Traceback (most recent call last):
 discord.ext.commands.errors.MissingRequiredArgument: cog_name is a required argument that is missing.
 
 ------------------------------------------------------------
+[2026-08-29 17:39:28] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: /calendar
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+  File "D:\!Docu\discordBot\cogs\calender.py", line 45, in calendarhaha
+    await interaction.response.send_message(content=f'```\n{description}\n```')
+UnboundLocalError: local variable 'description' referenced before assignment
+
+------------------------------------------------------------
