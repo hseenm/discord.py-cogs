@@ -1,0 +1,313 @@
+[2026-08-28 17:32:11] baomigua (697093121879572500) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*ezwordle
+discord.ext.commands.errors.CommandNotFound: Command "ezwordle" is not found
+
+------------------------------------------------------------
+[2026-08-28 17:32:11] baomigua (697093121879572500) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*ezwordle
+discord.ext.commands.errors.CommandNotFound: Command "ezwordle" is not found
+
+------------------------------------------------------------
+[2026-08-28 21:19:18] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*png
+discord.ext.commands.errors.CommandNotFound: Command "png" is not found
+
+------------------------------------------------------------
+[2026-08-28 21:21:26] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*reload
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\bot.py", line 1366, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 1021, in invoke
+    await self.prepare(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 938, in prepare
+    await self._parse_arguments(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 845, in _parse_arguments
+    transformed = await self.transform(ctx, param, attachments)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 697, in transform
+    raise MissingRequiredArgument(param)
+discord.ext.commands.errors.MissingRequiredArgument: cog_name is a required argument that is missing.
+
+------------------------------------------------------------
+[2026-08-28 21:46:00] scx.280 (663235667622625325) in BOT　　　　　　　　　　　　 TEST(880829629143842857)#一般:
+*solveaequation 1 -5 6
+discord.ext.commands.errors.CommandNotFound: Command "solveaequation" is not found
+
+------------------------------------------------------------
+[2026-08-28 23:08:36] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*play https://music.youtube.com/playlist?list=OLAK5uy_kV8hvzB9tSsepvnUqKSX9LOJz28GAyPMM&
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 853, in connect
+    await self._connection_event.wait()
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\asyncio\locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 852, in connect
+    async with async_timeout.timeout(timeout):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 179, in __aexit__
+    self._do_exit(exc_type)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 265, in _do_exit
+    raise asyncio.TimeoutError
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\music.py", line 60, in play
+    player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 2152, in connect
+    await voice.connect(timeout=timeout, reconnect=reconnect, self_deaf=self_deaf, self_mute=self_mute)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 856, in connect
+    raise ChannelTimeoutException(msg)
+wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as it exceeded the timeout of 30.0 seconds.
+
+------------------------------------------------------------
+[2026-08-28 23:10:49] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*play https://www.youtube.com/playlist?list=OLAK5uy_mUreIv4VhakXAgsuHiUrnWEV6crWYiAtw
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 853, in connect
+    await self._connection_event.wait()
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\asyncio\locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 852, in connect
+    async with async_timeout.timeout(timeout):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 179, in __aexit__
+    self._do_exit(exc_type)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 265, in _do_exit
+    raise asyncio.TimeoutError
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\music.py", line 60, in play
+    player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 2152, in connect
+    await voice.connect(timeout=timeout, reconnect=reconnect, self_deaf=self_deaf, self_mute=self_mute)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 856, in connect
+    raise ChannelTimeoutException(msg)
+wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as it exceeded the timeout of 30.0 seconds.
+
+------------------------------------------------------------
+[2026-08-28 23:11:24] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*play https://youtu.be/-ckmtXMWcHE
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 853, in connect
+    await self._connection_event.wait()
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\asyncio\locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 852, in connect
+    async with async_timeout.timeout(timeout):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 179, in __aexit__
+    self._do_exit(exc_type)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 265, in _do_exit
+    raise asyncio.TimeoutError
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\music.py", line 60, in play
+    player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 2152, in connect
+    await voice.connect(timeout=timeout, reconnect=reconnect, self_deaf=self_deaf, self_mute=self_mute)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 856, in connect
+    raise ChannelTimeoutException(msg)
+wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as it exceeded the timeout of 30.0 seconds.
+
+------------------------------------------------------------
+[2026-08-28 23:11:41] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*play v
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 853, in connect
+    await self._connection_event.wait()
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\asyncio\locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 852, in connect
+    async with async_timeout.timeout(timeout):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 179, in __aexit__
+    self._do_exit(exc_type)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 265, in _do_exit
+    raise asyncio.TimeoutError
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\music.py", line 60, in play
+    player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 2152, in connect
+    await voice.connect(timeout=timeout, reconnect=reconnect, self_deaf=self_deaf, self_mute=self_mute)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 856, in connect
+    raise ChannelTimeoutException(msg)
+wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as it exceeded the timeout of 30.0 seconds.
+
+------------------------------------------------------------
+[2026-08-28 23:11:46] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*play https://www.youtube.com/watch?v=-ckmtXMWcHE
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 853, in connect
+    await self._connection_event.wait()
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\asyncio\locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 852, in connect
+    async with async_timeout.timeout(timeout):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 179, in __aexit__
+    self._do_exit(exc_type)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 265, in _do_exit
+    raise asyncio.TimeoutError
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\music.py", line 60, in play
+    player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 2152, in connect
+    await voice.connect(timeout=timeout, reconnect=reconnect, self_deaf=self_deaf, self_mute=self_mute)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 856, in connect
+    raise ChannelTimeoutException(msg)
+wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as it exceeded the timeout of 30.0 seconds.
+
+------------------------------------------------------------
+[2026-08-28 23:17:52] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*play https://youtu.be/YDLafQ-Rg-k
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 853, in connect
+    await self._connection_event.wait()
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\asyncio\locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 852, in connect
+    async with async_timeout.timeout(timeout):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 179, in __aexit__
+    self._do_exit(exc_type)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 265, in _do_exit
+    raise asyncio.TimeoutError
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\music.py", line 60, in play
+    player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 2152, in connect
+    await voice.connect(timeout=timeout, reconnect=reconnect, self_deaf=self_deaf, self_mute=self_mute)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 856, in connect
+    raise ChannelTimeoutException(msg)
+wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as it exceeded the timeout of 30.0 seconds.
+
+------------------------------------------------------------
+[2026-08-28 23:39:50] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+*play https://youtu.be/ZMN9TFioGyg?si=R6iPmGbgGy-p2UvM
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 853, in connect
+    await self._connection_event.wait()
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\asyncio\locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 852, in connect
+    async with async_timeout.timeout(timeout):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 179, in __aexit__
+    self._do_exit(exc_type)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 265, in _do_exit
+    raise asyncio.TimeoutError
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\music.py", line 60, in play
+    player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 2152, in connect
+    await voice.connect(timeout=timeout, reconnect=reconnect, self_deaf=self_deaf, self_mute=self_mute)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 856, in connect
+    raise ChannelTimeoutException(msg)
+wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as it exceeded the timeout of 30.0 seconds.
+
+------------------------------------------------------------
+[2026-08-28 23:40:03] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#聽音樂:
+*play https://youtu.be/ZMN9TFioGyg?si=R6iPmGbgGy-p2UvM
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 853, in connect
+    await self._connection_event.wait()
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\asyncio\locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 852, in connect
+    async with async_timeout.timeout(timeout):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 179, in __aexit__
+    self._do_exit(exc_type)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\async_timeout\__init__.py", line 265, in _do_exit
+    raise asyncio.TimeoutError
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\music.py", line 60, in play
+    player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 2152, in connect
+    await voice.connect(timeout=timeout, reconnect=reconnect, self_deaf=self_deaf, self_mute=self_mute)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\wavelink\player.py", line 856, in connect
+    raise ChannelTimeoutException(msg)
+wavelink.exceptions.ChannelTimeoutException: Unable to connect to 聽音樂 as it exceeded the timeout of 30.0 seconds.
+
+------------------------------------------------------------
+[2026-08-28 23:42:40] baomigua (697093121879572500) in 生學大象抽(1175052405776318466)#聽音樂:
+*queue
+discord.ext.commands.errors.CommandNotFound: Command "queue" is not found
+
+------------------------------------------------------------
