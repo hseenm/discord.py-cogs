@@ -39,11 +39,11 @@ class solveaequation(commands.Cog):
         return ans
 
     @app_commands.command(name='solveequation', description='解一元二次方程式(ax²+bx+c=0)')
-    async def solve(self, interaction: discord.Interaction, a:int, b:int, c:int, float:bool = None):
+    async def solve_slash(self, interaction: discord.Interaction, a:int, b:int, c:int, float:bool = None):
             await interaction.response.send_message(content=f'x = {self.formula(a, b, c, float)}')
 
-    @commands.command()
-    async def solve(self, ctx: commands.Context, a:int, b:int, c:int, float:bool = True):
+    @commands.command(aliases=['slove'])
+    async def solve_trad(self, ctx: commands.Context, a:int, b:int, c:int, float:bool = True):
             await ctx.send(f'x = {self.formula(a, b, c, float)}')
 
 async def setup(bot: commands.Bot):
