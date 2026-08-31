@@ -369,3 +369,19 @@ Traceback (most recent call last):
 TypeError: ezwordle.produce_answercount() takes 0 positional arguments but 1 was given
 
 ------------------------------------------------------------
+[2026-08-31 16:45:49] scx.280 (663235667622625325) in BOT　　　　　　　　　　　　 TEST(880829629143842857)#一般:
+Content: *solve
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 1056, in invoke
+    await self.prepare(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 973, in prepare
+    await self._parse_arguments(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 880, in _parse_arguments
+    transformed = await self.transform(ctx, param, attachments)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 732, in transform
+    raise MissingRequiredArgument(param)
+discord.ext.commands.errors.MissingRequiredArgument: a is a required argument that is missing.
+
+------------------------------------------------------------
