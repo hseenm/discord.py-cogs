@@ -69,40 +69,41 @@ class CommandErrorHandler(commands.Cog):
         # 1. 缺少必填參數
         if isinstance(error, commands.MissingRequiredArgument):
             title = "⚠️ | 缺少必要參數"
-            description = f"你漏填了必要參數：`{error.param.name}`\n\n**正確用法：**\n`{usage}`"
+            description = f"```py\n{usage}\n{repr(error)}\n```"
 
         # 2. 參數型態或內容錯誤
         elif isinstance(error, commands.BadArgument):
             title = "⚠️ | 參數型態錯誤"
-            description = f"輸入的參數格式或型態不正確。\n\n**正確用法：**\n`{usage}`"
+            description = f"```py\n{usage}\n{repr(error)}\n```"
 
         elif isinstance(error, commands.MissingPermissions):
             title = "🚫 | 權限不足"
             perms = "、".join([f"`{p}`" for p in error.missing_permissions])
-            description = f"你缺乏執行此指令所需的權限：{perms}"
+            description = f"你缺乏執行此指令所需的權限：{perms}\n```py\n{repr(error)}\n```"
 
         elif isinstance(error, commands.BotMissingPermissions):
             title = "🤖 | 機器人權限不足"
             perms = "、".join([f"`{p}`" for p in error.missing_permissions])
-            description = f"機器人在當前頻道缺少必要權限：{perms}，請聯絡管理員設定。"
+            description = f"機器人在當前頻道缺少必要權限：{perms}\n```py\n{repr(error)}\n```"
 
         elif isinstance(error, commands.CommandOnCooldown):
             title = "⏳ | 指令冷卻中"
-            description = f"指令使用太頻繁，請等待 **{error.retry_after:.1f}** 秒後再試。"
+            description = f"指令使用太頻繁，請等待 **{error.retry_after:.1f}** 秒後再試。\n```py\n{repr(error)}\n```"
 
         elif isinstance(error, commands.NoPrivateMessage):
             title = "🚫 | 無法在私訊使用"
-            description = "此指令僅限於伺服器頻道中使用，無法在私訊執行。"
+            description = "此指令僅限於伺服器頻道中使用，無法在私訊執行。\n```py\n{repr(error)}\n```"
 
         elif isinstance(error, commands.CheckFailure):
             title = "🔒 | 檢查未通過"
-            description = "你不符合執行此指令的條件或身分組限制。"
+            description = "你不符合執行此指令的條件或身分組限制。\n```py\n{repr(error)}\n```"
 
         else:
             # 未預期錯誤，顯示原始例外訊息
             description = f"發生未預期的系統錯誤：\n```py\n{repr(error)}\n```"
 
-        embed = discord.Embed(title=title, description=description, color=0xFF3C3C)
+        embed = discord.Embed(title=title, description=description, color=0xED4A34, timestamp=datetime.now())
+        embed.set_footer(text= '以上錯誤訊息顯示格式均為Gemini生成', icon_url='https://cdn.discordapp.com/emojis/1384528692629471242.webp?size=128')
         await ctx.reply(embed=embed, mention_author=False)
 
     # 2. 處理斜線指令錯誤

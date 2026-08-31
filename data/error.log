@@ -455,3 +455,95 @@ Traceback (most recent call last):
 discord.ext.commands.errors.MissingRequiredArgument: emoji is a required argument that is missing.
 
 ------------------------------------------------------------
+[2026-08-31 17:15:42] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *addEmoji
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 1056, in invoke
+    await self.prepare(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 973, in prepare
+    await self._parse_arguments(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 880, in _parse_arguments
+    transformed = await self.transform(ctx, param, attachments)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 732, in transform
+    raise MissingRequiredArgument(param)
+discord.ext.commands.errors.MissingRequiredArgument: emoji is a required argument that is missing.
+
+------------------------------------------------------------
+[2026-08-31 17:22:57] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *say
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 1056, in invoke
+    await self.prepare(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 973, in prepare
+    await self._parse_arguments(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 888, in _parse_arguments
+    kwargs[name] = await self.transform(ctx, param, attachments)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 732, in transform
+    raise MissingRequiredArgument(param)
+discord.ext.commands.errors.MissingRequiredArgument: message is a required argument that is missing.
+
+------------------------------------------------------------
+[2026-08-31 17:26:58] sarsi.salt.ver (669187014138265600) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *say
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 1056, in invoke
+    await self.prepare(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 973, in prepare
+    await self._parse_arguments(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 888, in _parse_arguments
+    kwargs[name] = await self.transform(ctx, param, attachments)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 732, in transform
+    raise MissingRequiredArgument(param)
+discord.ext.commands.errors.MissingRequiredArgument: message is a required argument that is missing.
+
+------------------------------------------------------------
+[2026-08-31 17:28:37] sarsi.salt.ver (669187014138265600) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *say
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 1056, in invoke
+    await self.prepare(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 973, in prepare
+    await self._parse_arguments(ctx)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 888, in _parse_arguments
+    kwargs[name] = await self.transform(ctx, param, attachments)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 732, in transform
+    raise MissingRequiredArgument(param)
+discord.ext.commands.errors.MissingRequiredArgument: message is a required argument that is missing.
+
+------------------------------------------------------------
+[2026-08-31 17:32:08] sarsi.salt.ver (669187014138265600) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *addEmoji 123 456
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\other.py", line 25, in add_emoji
+    message = await ctx.channel.fetch_message(int(message_id));
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\abc.py", line 1772, in fetch_message
+    data = await self._state.http.get_message(channel.id, id)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\http.py", line 774, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10008): Unknown Message
+
+------------------------------------------------------------
+[2026-08-31 17:32:32] sarsi.salt.ver (669187014138265600) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *addEmoji 123 1543916293697183765
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\other.py", line 29, in add_emoji
+    await message.add_reaction(emoji);
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\message.py", line 1543, in add_reaction
+    await self._state.http.add_reaction(self.channel.id, self.id, emoji)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\http.py", line 778, in request
+    raise HTTPException(response, data)
+discord.errors.HTTPException: 400 Bad Request (error code: 10014): Unknown Emoji
+
+------------------------------------------------------------
