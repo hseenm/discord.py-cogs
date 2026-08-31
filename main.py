@@ -29,7 +29,7 @@ async def on_ready():
 
     print(f"機器人已上線！登入身分：{bot.user}")
 
-@bot.command()
+@bot.command(aliases=['relaod'])
 @commands.is_owner()  # 限制只有機器人擁有者可以執行
 async def reload(ctx: commands.Context, cog_name: str):
     theMessage1 = await ctx.send(f"正在重新整理...")
