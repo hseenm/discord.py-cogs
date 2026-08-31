@@ -34,6 +34,12 @@ class ezwordle(commands.Cog):
         self.enchant_dict = enchant.Dict("en_US")
         self.enchant_dictb = enchant.Dict("en_GB")
 
+    def produce_answercount(self):
+            answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
+            answercount_ramdoned = random.choices(answercountlist, weights=[10, 15, 20, 40, 5, 5, 3, 2])[0]
+            chance = '\n字母數出現的機率如下\n`  3   4   5   6   7   8   9  10`\n`10% 15% 20% 40%  5%  5%  3%  2%`'
+            return answercount_ramdoned, chance
+
     def is_valid_word(self, word, ab):
         #global detecting
         in_enchant = self.enchant_dict.check(word)
@@ -46,6 +52,20 @@ class ezwordle(commands.Cog):
             #    print(f"❌ '{word}' 不在 words 詞庫中")
         return in_enchant or in_enchantb
 
+    def begin_embed(self, threads, answercount):
+        if threads:
+            threadhint = '隨後請於機器人創立的討論串中進行猜答\n'
+        else:
+            threadhint = ''
+        if answercount:
+            answercount_ramdoned = answercount
+            chance = ''
+        else:
+            answercount_ramdoned, chance = self.produce_answercount()
+        return discord.Embed(   colour=0xf4cc3a, 
+                                title ='<:cjzcj04m3:1220986072906076170> | Wordle',
+                                description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲\n因為 iOS 系統原因，正確字母之 emoji 不會正常顯示\n建議遊玩系統為 Windows 以及 Android') , answercount_ramdoned
+
     def load_emojimap(self):
         with open("./data/emojimap.json", "r", encoding="utf-8") as f:
             return json.load(f)
@@ -54,72 +74,77 @@ class ezwordle(commands.Cog):
     #    with open("./data/emojimap.json", "w", encoding="utf-8") as f:
     #        json.dump(data, f, ensure_ascii=False, indent=4)
 
+    async def randomtheWord(self, threads, channel, answercount):
+        global detecting
+        detecting = True
+        if threads:
+            message = channel.last_message
+            threadschannel = await channel.create_thread(name='EZWordle', message=message)
+        common_words = top_n_list('en', 5000, wordlist='best')
+        lemmatizer = WordNetLemmatizer()
+        print("1")
+        filtered = [
+            w for w in common_words
+            if len(w) == int(answercount)
+            and lemmatizer.lemmatize(w, pos='v') == w  # 過濾過去式、完成式
+            and lemmatizer.lemmatize(w, pos='n') == w  # 過濾複數名詞
+            #and self.is_valid_word(w, 'a')
+        ]
+        answer = random.choice(filtered)
+        while not self.is_valid_word(answer, 'a'):
+            answer = random.choice(filtered)
+        #print("answer")
+        damnwords = {"fish", "teacher"}
+        while answer in damnwords:
+            answer = random.choice(filtered)
+        while "'" in list(answer):
+            answer = random.choice(filtered)
+        position = common_words.index(answer)
+        position = position +1
+        self.answercount = int(answercount)
+        self.answer = answer
+        if threads == True:
+            self.wordlechannel = threadschannel.id
+            await threadschannel.send(f'開始遊戲({position}/5000)')
+        else:
+            self.wordlechannel = channel.id
+            await channel.send(f'開始遊戲({position}/5000)')
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_entry = f"[{now}] \n({position}/5000)這次的答案為 {answer} \n{'-'*60}\n"
+        with open("./data/wordle.log", "a", encoding="utf-8") as f:
+            f.write(log_entry)
+
+
     @app_commands.command(name='ezwordle', description='wordle')
     @app_commands.describe(threads='選擇要不要使用討論串', answercount='可以指定要幾個字元')
-    async def ezwordle(self, interaction: discord.Interaction, answercount:str = None, threads: bool = None):
+    async def ezwordle_slash(self, interaction: discord.Interaction, answercount:str = None, threads: bool = None):
         global detecting
         if detecting == True:
             await interaction.response.send_message(content=f'請先使用`我認輸，可以給答案了`或者將單字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>')
         elif detecting == False:
-            if threads == True:
-                threadhint = '隨後請於機器人創立的討論串中進行猜答\n'
-            else:
-                threadhint = ''
             answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
             if answercount and (answercount not in answercountlist):
                 await interaction.response.send_message(content=f'請輸入 `{" ".join(answercountlist)}` 的其中一個')
                 return
-            chance = ''
-            if not answercount:
-                answercount = random.choices(answercountlist, weights=[10, 15, 20, 40, 5, 5, 3, 2])[0]
-                chance = '\n字母數出現的機率如下\n`  3   4   5   6   7   8   9  10`\n`10% 15% 20% 40%  5%  5%  3%  2%`'
-            #answercount = random.choice([3, 4, 5, 5, 6, 6, 6])
-            embed = discord.Embed(  colour=0xf4cc3a, 
-                                    title ='<:cjzcj04m3:1220986072906076170> | Wordle',
-                                    description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲\n因為 iOS 系統原因，正確字母之 emoji 不會正常顯示\n建議遊玩系統為 Windows 以及 Android')
+            embed, answercount_ramdoned = self.begin_embed(threads, answercount)
             await interaction.response.send_message(embed=embed)
-            detecting = True
-            if threads == True:
-                message = interaction.channel.last_message
-                threadschannel = await interaction.channel.create_thread(name='EZWordle', message=message)
-            #words = words.words()
-            #word_list = nltk_words.words()
-            #fdist = FreqDist(word.lower() for word in word_list if word.isalpha())
-            #common_words = [w for w, _ in fdist.most_common(5000)]
-            common_words = top_n_list('en', 5000, wordlist='best')
-            lemmatizer = WordNetLemmatizer()
-            print("1")
-            filtered = [
-                w for w in common_words
-                if len(w) == int(answercount)
-                and lemmatizer.lemmatize(w, pos='v') == w  # 過濾過去式、完成式
-                and lemmatizer.lemmatize(w, pos='n') == w  # 過濾複數名詞
-                #and self.is_valid_word(w, 'a')
-            ]
-            answer = random.choice(filtered)
-            while not self.is_valid_word(answer, 'a'):
-                answer = random.choice(filtered)
-            #print("answer")
-            damnwords = {"fish", "teacher"}
-            while answer in damnwords:
-                answer = random.choice(filtered)
-            while "'" in list(answer):
-                answer = random.choice(filtered)
-            position = common_words.index(answer)
-            position = position +1
-            self.answercount = int(answercount)
-            self.answer = answer
-            if threads == True:
-                self.wordlechannel = threadschannel.id
-                await threadschannel.send(f'開始遊戲({position}/5000)')
-            else:
-                self.wordlechannel = interaction.channel.id
-                await interaction.channel.send(f'開始遊戲({position}/5000)')
+            await self.randomtheWord(threads, interaction.channel, answercount_ramdoned)
 
-            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            log_entry = f"[{now}] \n({position}/5000)這次的答案為 {answer} \n{'-'*60}\n"
-            with open("./data/wordle.log", "a", encoding="utf-8") as f:
-                f.write(log_entry)
+    @commands.command(aliases=["ezwordle"])
+    async def ezwordle_trad(self, ctx, answercount:str = None, threads: bool = None):
+        global detecting
+        if detecting == True:
+            await ctx.reply(content=f'請先使用`我認輸，可以給答案了`或者將單字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>',mention_author=False)
+        elif detecting == False:
+            answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
+            if answercount and (answercount not in answercountlist):
+                await ctx.reply(content=f'請輸入 `{" ".join(answercountlist)}` 的其中一個',mention_author=False)
+                return
+            embed, answercount_ramdoned = self.begin_embed(threads, answercount)
+            await ctx.reply(embed=embed,mention_author=False)
+            #await ctx.message.delete()
+            await self.randomtheWord(threads, ctx.channel, answercount_ramdoned)
+
 
     @commands.Cog.listener()
     async def on_message(self, message):

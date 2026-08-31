@@ -37,7 +37,7 @@ class Oneatwob(commands.Cog):
 
     @app_commands.command(name='1a2b', description='the multiplayer version')
     #@app_commands.describe(threads='選擇要不要使用討論串')
-    async def oneatwob(self, interaction: discord.Interaction):
+    async def oneatwob_slash(self, interaction: discord.Interaction):
         global detectingfor1a2b
         if detectingfor1a2b == True:
             await interaction.response.send_message(content=f'請先使用`我認輸，可以給答案了`或者將數字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>')
@@ -46,7 +46,7 @@ class Oneatwob(commands.Cog):
             await self.oneatwobcode(interaction.channel)
 
     @commands.command(aliases=["1a2b"])
-    async def oneatwob(self, ctx: commands.Context):
+    async def oneatwob_trad(self, ctx: commands.Context):
         global detectingfor1a2b
         if detectingfor1a2b == True:
             await ctx.send(f'請先使用`我認輸，可以給答案了`或者將數字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>')

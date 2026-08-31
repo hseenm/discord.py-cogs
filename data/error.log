@@ -347,3 +347,25 @@ Traceback (most recent call last):
 UnboundLocalError: local variable 'description' referenced before assignment
 
 ------------------------------------------------------------
+[2026-08-31 13:45:30] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *ezwordle
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\ezwordle.py", line 139, in ezwordle_trad
+    await ctx.send(embed=self.randomtheWord(threads, ctx.channel).begin_embed())
+AttributeError: 'coroutine' object has no attribute 'begin_embed'
+
+------------------------------------------------------------
+[2026-08-31 14:11:29] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *ezwordle
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\ezwordle.py", line 143, in ezwordle_trad
+    embed, answercount_ramdoned = self.begin_embed(threads, answercount)
+  File "D:\!Docu\discordBot\cogs\ezwordle.py", line 64, in begin_embed
+    answercount_ramdoned, chance = self.produce_answercount()
+TypeError: ezwordle.produce_answercount() takes 0 positional arguments but 1 was given
+
+------------------------------------------------------------
