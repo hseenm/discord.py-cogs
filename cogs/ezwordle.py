@@ -36,8 +36,8 @@ class ezwordle(commands.Cog):
 
     def produce_answercount(self):
             answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
-            answercount_ramdoned = random.choices(answercountlist, weights=[10, 15, 20, 40, 5, 5, 3, 2])[0]
-            chance = '\n字母數出現的機率如下\n`  3   4   5   6   7   8   9  10`\n`10% 15% 20% 40%  5%  5%  3%  2%`'
+            answercount_ramdoned = random.choices(answercountlist, weights=[5, 15, 20, 50, 4, 3, 2, 1])[0]
+            chance = '\n字母數出現的機率如下\n`  3   4   5   6   7   8   9  10`\n` 5% 15% 20% 50%  4%  3%  2%  1%`'
             return answercount_ramdoned, chance
 
     def is_valid_word(self, word, ab):
@@ -169,7 +169,7 @@ class ezwordle(commands.Cog):
                 detecting = False
                 self.hint = 0
             else:
-                if message.content == '/hint':
+                if message.content in ('/hint', '*hint'):
                     if self.answercount >= 7 or self.hint <= 2:
                         if self.answercount <= 7:
                             self.hint = self.hint + 1

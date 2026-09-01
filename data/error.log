@@ -547,3 +547,28 @@ Traceback (most recent call last):
 discord.errors.HTTPException: 400 Bad Request (error code: 10014): Unknown Emoji
 
 ------------------------------------------------------------
+[2026-08-31 17:43:16] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *1a2b
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\oneatwob.py", line 69, in oneatwob_trad
+    await self.bot.http.send_message(ctx.channel.id, params=self.payload)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\http.py", line 884, in send_message
+    if params.files:
+AttributeError: 'dict' object has no attribute 'files'
+
+------------------------------------------------------------
+[2026-08-31 17:47:44] scx.280 (663235667622625325) in 生學大象抽(1175052405776318466)#ㄐㄐ人研發兼測試中心暨指令遊樂區:
+Content: *1a2b
+Traceback (most recent call last):
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "D:\!Docu\discordBot\cogs\oneatwob.py", line 73, in oneatwob_trad
+    await self.bot.http.request(route, json=self.payload)
+  File "C:\Users\opiia\AppData\Local\Programs\Python\Python310\lib\site-packages\discord\http.py", line 778, in request
+    raise HTTPException(response, data)
+discord.errors.HTTPException: 400 Bad Request (error code: 50035): Invalid Form Body
+In components.0: Value of field "type" must be one of (1,).
+
+------------------------------------------------------------
