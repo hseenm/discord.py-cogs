@@ -20,6 +20,10 @@ class Gemini(commands.Cog):
         self.models_to_try = [
             "gemini-3.6-flash",
             "gemini-3.5-flash",
+            "gemini-3.4-flash",
+            "gemini-3.3-flash",
+            "gemini-3.2-flash",
+            "gemini-3.1-flash",
             "gemini-3.0-flash"
         ]
 
@@ -77,9 +81,9 @@ class Gemini(commands.Cog):
                 chat = gemini_client.aio.chats.create(
                     model=model_name,
                     history=history_contents,
-                    config=types.GenerateContentConfig(
-                        system_instruction="說話像2020年的AI風格"
-                    )
+                    #config=types.GenerateContentConfig(
+                    #    system_instruction="說話像2020年的AI風格"
+                    #)
                 )
                 response = await chat.send_message(prompt)
                 return response.text or "（無文字回應）"
@@ -109,20 +113,17 @@ class Gemini(commands.Cog):
             channel_id = str(message.channel.id)
 
             try:
-                async with message.channel.typing():
-                    # 執行帶有 fallback 機制的回應生成
-                    reply_text = await self.send_message_with_fallback(channel_id, clean_prompt)
-
-                    # 更新並記錄至 JSON
-                    if channel_id not in self.history_data:
-                        self.history_data[channel_id] = []
-
-                    self.history_data[channel_id].append({"role": "user", "text": clean_prompt})
-                    self.history_data[channel_id].append({"role": "model", "text": reply_text})
-                    self.history_data[channel_id] = self.history_data[channel_id][-20:]
-                    self.save_history()
-
-                    await message.channel.send(reply_text[:2000])
+                #async with message.channel.typing():
+                # 執行帶有 fallback 機制的回應生成
+                reply_text = await self.send_message_with_fallback(channel_id, clean_prompt)
+                # 更新並記錄至 JSON
+                if channel_id not in self.history_data:
+                    self.history_data[channel_id] = []
+                self.history_data[channel_id].append({"role": "user", "text": clean_prompt})
+                self.history_data[channel_id].append({"role": "model", "text": reply_text})
+                self.history_data[channel_id] = self.history_data[channel_id][-20:]
+                self.save_history()
+                await message.channel.send(reply_text[:2000])
             except Exception as e:
                 print(f"Gemini API 發生錯誤: {e}")
                 theErrorEmbed = discord.Embed(color=0xFF0000)
