@@ -22,7 +22,7 @@ class Other(commands.Cog):
     @commands.is_owner()
     async def sendemoji(self, ctx, name, value):
         await ctx.message.delete();
-        await ctx.send(f'<{name}:{value}>')
+        await ctx.send(f'<:{name}:{value}>')
 
     @commands.command(aliases=["addEmoji"])
     @commands.is_owner()
