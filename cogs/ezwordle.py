@@ -157,81 +157,88 @@ class ezwordle(commands.Cog):
         # 偵測狀態
         content = message.content
         if detecting:
-            if message.content == '我認輸，可以給答案了' or content.lower() == self.answer:
-                if content.lower() == self.answer:
-                    await message.add_reaction('<:114514:1382967646902816849>')
-                if message.content == '我認輸，可以給答案了':
-                    await message.channel.send(f"遊戲結束，正確答案為 `{self.answer}`")
+            if message.content == '我認輸，可以給答案了':# or content.lower() == self.answer:
+                #if content.lower() == self.answer:
+                #    await message.add_reaction('<:114514:1382967646902816849>')
+                #if message.content == '我認輸，可以給答案了':
+                await message.channel.send(f"遊戲結束，正確答案為 `{self.answer}`")
                 self.answer = None
                 self.answercount = 0
                 self.wordlechannel = None
                 self.damn1 = self.damn2 = self.damn3 = self.damn4 = self.damn5 = True
                 detecting = False
                 self.hint = 0
-            else:
-                if message.content in ('/hint', '*hint'):
-                    if self.answercount >= 7 or self.hint <= 2:
-                        if self.answercount <= 7:
-                            self.hint = self.hint + 1
-                        #print('hint')
-                        listraw = list(self.answer)
-                        listctx = []
-                        for k in range(self.answercount):
-                            listctx.append(' ')
-                        listhint = copy.deepcopy(listctx[:self.answercount])
-                        hint = random.choice(listraw)
-                        all_indices = [i for i, x in enumerate(listraw) if x == hint]
-                        chosen_index = random.choice(all_indices)
-                        listctx[chosen_index] = hint
-                        for i in range(self.answercount):
-                            if i == chosen_index:
-                                listhint[chosen_index] = f':regional_indicator_{hint}:'
-                            else:
-                                listhint[i] = '⬛'
-                        printt = ' '.join(listhint)
-                        #print(printt)
-                        content = ''.join(listctx)
-                        await message.delete()
-                        await asyncio.sleep(1)
-                        await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**')
-                elif len(content) == self.answercount and message.channel.id == self.wordlechannel:
+            elif message.content in ('/hint', '*hint'):
+                if self.answercount >= 7 or self.hint <= 2:
+                    if self.answercount <= 7:
+                        self.hint = self.hint + 1
+                    #print('hint')
+                    listraw = list(self.answer)
+                    listctx = []
+                    for k in range(self.answercount):
+                        listctx.append(' ')
+                    listhint = copy.deepcopy(listctx[:self.answercount])
+                    hint = random.choice(listraw)
+                    all_indices = [i for i, x in enumerate(listraw) if x == hint]
+                    chosen_index = random.choice(all_indices)
+                    listctx[chosen_index] = hint
+                    for i in range(self.answercount):
+                        if i == chosen_index:
+                            listhint[chosen_index] = emojimap[f"{list1[i].upper()}co"]
+                        else:
+                            listhint[i] = '⬛'
+                    printt = ' '.join(listhint)
+                    #print(printt)
+                    content = ''.join(listctx)
                     await message.delete()
-                    if self.is_valid_word(content, 'b'):
-                        list0 = list(self.answer)
-                        list1 = list(content)
-                        list2 = copy.deepcopy(list1[:self.answercount])
-                        for i in range(self.answercount):
-                            list1[i] = list1[i].lower()
-                            if list1[i] == list0[i]:
-                                list2[i] = f':regional_indicator_{list1[i]}:'
-                                #list2[i] = f'🟩'
-                            elif list1[i] in list0:
-                                #list2[i] = f'`{list1[i]}`'
-                                list2[i] = emojimap[list1[i]]
-                            else:
-                                list2[i] = emojimap[f'{list1[i]}_']
-                        printt = ' '.join(list2)
-                    else:
-                        printt = '❌'
-                    guild = await self.bot.fetch_guild(1175052405776318466)
-                    if message.guild == guild and len(content) == self.answercount:
-                        if self.damn1 == True and content == 'fish':
-                            printt = '<:emoji_19:1384527296605589595>'
-                            self.damn1 = False
-                        #elif bot.damn2 == True and message.content == 'dick':
-                        #    printt = '<:wow:978303515560656906>'
-                        #    bot.damn2 = False
-                        #elif bot.damn3 == True and message.content == 'damn':
-                        #    printt = '<:emoji_25:1394640873291251723>'
-                        #    bot.damn3 = False
-                        elif self.damn4 == True  and content == 'teacher':
-                            printt = '<:mr_Chen:957204698555891742>'
-                            self.damn4 = False
-                        #elif bot.damn5 == True and message.content == 'summer':
-                        #    printt = '<:summer_:1329781718554775572>'
-                        #    bot.damn5 = False
-                    #await asyncio.sleep(1)
-                    await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**', silent=True)
+                    await asyncio.sleep(1)
+                    await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**')
+            elif len(content) == self.answercount and message.channel.id == self.wordlechannel:
+                await message.delete()
+                if self.is_valid_word(content, 'b'):
+                    list0 = list(self.answer)
+                    list1 = list(content)
+                    list2 = copy.deepcopy(list1[:self.answercount])
+                    for i in range(self.answercount):
+                        list1[i] = list1[i].lower()
+                        if list1[i] == list0[i]:
+                            list2[i] = emojimap[f"{list1[i].upper()}co"]
+                            #list2[i] = f'🟩'
+                        elif list1[i] in list0:
+                            #list2[i] = f'`{list1[i]}`'
+                            list2[i] = emojimap[list1[i]]
+                        else:
+                            list2[i] = emojimap[f'{list1[i]}_']
+                    printt = ' '.join(list2)
+                else:
+                    printt = '❌'
+                guild = await self.bot.fetch_guild(1175052405776318466)
+                if message.guild == guild and len(content) == self.answercount:
+                    if self.damn1 == True and content == 'fish':
+                        printt = '<:emoji_19:1384527296605589595>'
+                        self.damn1 = False
+                    #elif bot.damn2 == True and message.content == 'dick':
+                    #    printt = '<:wow:978303515560656906>'
+                    #    bot.damn2 = False
+                    #elif bot.damn3 == True and message.content == 'damn':
+                    #    printt = '<:emoji_25:1394640873291251723>'
+                    #    bot.damn3 = False
+                    elif self.damn4 == True  and content == 'teacher':
+                        printt = '<:mr_Chen:957204698555891742>'
+                        self.damn4 = False
+                    #elif bot.damn5 == True and message.content == 'summer':
+                    #    printt = '<:summer_:1329781718554775572>'
+                    #    bot.damn5 = False
+                #await asyncio.sleep(1)
+                maybeaddemojimessage = await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**', silent=True)
+                if content.lower() == self.answer:
+                    await maybeaddemojimessage.add_reaction('<:114514:1382967646902816849>')
+                    self.answer = None
+                    self.answercount = 0
+                    self.wordlechannel = None
+                    self.damn1 = self.damn2 = self.damn3 = self.damn4 = self.damn5 = True
+                    detecting = False
+                    self.hint = 0
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ezwordle(bot))
