@@ -15,12 +15,21 @@ logging.getLogger('discord.voice_client').setLevel(logging.DEBUG)
 #gemini_client = genai.Client(api_key=AI_API)
 intents = intents = discord.Intents.all()
 intents.members = True
-activity = discord.Streaming(name="什麼都沒有", url="https://www.youtube.com/watch?v=YDLafQ-Rg-k")
-bot = commands.Bot(command_prefix= ['#','*','下巴'],intents=intents, case_insensitive=True , activity=activity)
+#activity = discord.Streaming(name="什麼都沒有", url="https://www.youtube.com/watch?v=YDLafQ-Rg-k")
+bot = commands.Bot(command_prefix= ['#','*','下巴'],intents=intents, case_insensitive=True)# , activity=activity)
+
+async def change_status():
+    while True:
+        await bot.change_presence(activity=discord.Streaming(name="什麼都沒有", url="https://www.youtube.com/watch?v=YDLafQ-Rg-k"))
+        await asyncio.sleep(10)
+        server = len(bot.guilds)
+        await bot.change_presence(activity=discord.Streaming(name=f"伺服器數量：{server}", url="https://www.youtube.com/watch?v=sCDwSCYEWoY"))
+        await asyncio.sleep(10)
 
 @bot.event
 async def on_ready():
     # 同步 Slash 指令到伺服器
+    await change_status()
     try:
         synced = await bot.tree.sync()
         print(f"已同步 {len(synced)} 個 Slash 指令")

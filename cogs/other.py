@@ -18,6 +18,12 @@ class Other(commands.Cog):
         await ctx.message.delete();
         await ctx.send(message);
 
+    @commands.command(aliases=['send'])
+    @commands.is_owner()
+    async def sendemoji(self, ctx, name, value):
+        await ctx.message.delete();
+        await ctx.send(f'<{name}:{value}>')
+
     @commands.command(aliases=["addEmoji"])
     @commands.is_owner()
     async def add_emoji(self, ctx, emoji: discord.Emoji | str, message_id:int, channel_id:int = None):
