@@ -28,6 +28,7 @@ class ezwordle(commands.Cog):
         self.answer = None
         #detecting = False
         self.answercount = 0
+        self.wordleguild = None
         self.wordlechannel = None
         self.hint = 0
         self.damn1 = self.damn2 = self.damn3 = self.damn4 = self.damn5 = True
@@ -64,7 +65,7 @@ class ezwordle(commands.Cog):
             answercount_ramdoned, chance = self.produce_answercount()
         return discord.Embed(   colour=0xf4cc3a, 
                                 title ='<:cjzcj04m3:1220986072906076170> | Wordle',
-                                description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲\n因為 iOS 系統原因，正確字母之 emoji 不會正常顯示\n建議遊玩系統為 Windows 以及 Android') , answercount_ramdoned
+                                description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲') , answercount_ramdoned
 
     def load_emojimap(self):
         with open("./data/emojimap.json", "r", encoding="utf-8") as f:
@@ -103,6 +104,7 @@ class ezwordle(commands.Cog):
         position = position +1
         self.answercount = int(answercount)
         self.answer = answer
+        self.wordleguild = channel.guild
         if threads == True:
             self.wordlechannel = threadschannel.id
             await threadschannel.send(f'開始遊戲({position}/5000)')
@@ -120,7 +122,9 @@ class ezwordle(commands.Cog):
     async def ezwordle_slash(self, interaction: discord.Interaction, answercount:str = None, threads: bool = None):
         global detecting
         if detecting == True:
-            await interaction.response.send_message(content=f'請先使用`我認輸，可以給答案了`或者將單字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>')
+            embederror = discord.Embed(color=0xF27D72, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
+            embederror.set_footer(text=self.wordleguild.name, icon_url=self.wordleguild.icon.url)
+            await interaction.response.send_message(embed = embederror)
         elif detecting == False:
             answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
             if answercount and (answercount not in answercountlist):
@@ -134,7 +138,9 @@ class ezwordle(commands.Cog):
     async def ezwordle_trad(self, ctx, answercount:str = None, threads: bool = None):
         global detecting
         if detecting == True:
-            await ctx.reply(content=f'請先使用`我認輸，可以給答案了`或者將單字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>',mention_author=False)
+            embederror = discord.Embed(color=0xF27D72, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
+            embederror.set_footer(text=self.wordleguild.name, icon_url=self.wordleguild.icon.url)
+            await ctx.reply(embed = embederror, mention_author=False)
         elif detecting == False:
             answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
             if answercount and (answercount not in answercountlist):
@@ -156,7 +162,7 @@ class ezwordle(commands.Cog):
         #await self.bot.process_commands(message)
         # 偵測狀態
         content = message.content
-        if detecting:
+        if detecting and message.channel.id == self.wordlechannel:
             if message.content == '我認輸，可以給答案了':# or content.lower() == self.answer:
                 #if content.lower() == self.answer:
                 #    await message.add_reaction('<:114514:1382967646902816849>')
@@ -193,7 +199,7 @@ class ezwordle(commands.Cog):
                     await message.delete()
                     await asyncio.sleep(1)
                     await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**')
-            elif len(content) == self.answercount and message.channel.id == self.wordlechannel:
+            elif len(content) == self.answercount:
                 await message.delete()
                 if self.is_valid_word(content, 'b'):
                     list0 = list(self.answer)
@@ -232,7 +238,7 @@ class ezwordle(commands.Cog):
                 #await asyncio.sleep(1)
                 maybeaddemojimessage = await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**', silent=True)
                 if content.lower() == self.answer:
-                    await maybeaddemojimessage.add_reaction('<:114514:1382967646902816849>')
+                    await maybeaddemojimessage.add_reaction('<:114514:1382967646902816849>' if message.guild == guild else '<:aa10:1005430382759526450>')
                     self.answer = None
                     self.answercount = 0
                     self.wordlechannel = None
