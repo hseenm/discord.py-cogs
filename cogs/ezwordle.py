@@ -54,10 +54,7 @@ class ezwordle(commands.Cog):
         return in_enchant or in_enchantb
 
     def begin_embed(self, threads, answercount):
-        if threads:
-            threadhint = '隨後請於機器人創立的討論串中進行猜答\n'
-        else:
-            threadhint = ''
+        threadhint = '隨後請於機器人創立的討論串中進行猜答\n' if threads else ''
         if answercount:
             answercount_ramdoned = answercount
             chance = ''
