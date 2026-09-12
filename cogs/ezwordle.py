@@ -197,7 +197,6 @@ class ezwordle(commands.Cog):
                     await asyncio.sleep(1)
                     await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**')
             elif len(content) == self.answercount:
-                await message.delete()
                 if self.is_valid_word(content, 'b'):
                     list0 = list(self.answer)
                     list1 = list(content)
@@ -233,6 +232,7 @@ class ezwordle(commands.Cog):
                     #    printt = '<:summer_:1329781718554775572>'
                     #    bot.damn5 = False
                 #await asyncio.sleep(1)
+                await message.delete()
                 maybeaddemojimessage = await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**', silent=True)
                 if content.lower() == self.answer:
                     await maybeaddemojimessage.add_reaction('<:114514:1382967646902816849>' if message.guild == guild else '<:aa10:1005430382759526450>')
