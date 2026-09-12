@@ -124,6 +124,7 @@ class Exam(commands.Cog):
                     return json.load(f)
 
     @app_commands.command(name='exam', description='考個駕照吧')
+    @app_commands.describe(types='選擇駕照題庫車種')
     @app_commands.choices(
         types = [
             app_commands.Choice(name="機車考題", value="moto"),
