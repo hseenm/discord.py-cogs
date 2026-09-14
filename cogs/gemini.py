@@ -8,8 +8,10 @@ from google.genai.errors import APIError
 import config
 import json
 import os
+from dotenv import load_dotenv
 
-AI_API = config.AI_API
+load_dotenv()
+AI_API = os.getenv("AI_API")
 gemini_client = genai.Client(api_key=AI_API)
 HISTORY_FILE = "./data/chat_history.json"
 
@@ -126,7 +128,7 @@ class Gemini(commands.Cog):
                 await message.channel.send(reply_text[:2000])
             except Exception as e:
                 print(f"Gemini API 發生錯誤: {e}")
-                theErrorEmbed = discord.Embed(color=0xFF0000)
+                theErrorEmbed = discord.Embed(color=config.color_error)
                 theErrorEmbed.description = f'```\n{e}\n```'
                 await message.channel.send('因為劉東鑫超可憐叫Gemini寫程式碼所以導致的錯誤', embed = theErrorEmbed)
 
