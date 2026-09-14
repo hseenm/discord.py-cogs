@@ -7,11 +7,14 @@ import config
 import traceback
 from datetime import datetime, timedelta, timezone
 import logging
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('discord.voice_client').setLevel(logging.DEBUG)
 
-# 設定意圖 (Intents)
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
+
 #gemini_client = genai.Client(api_key=AI_API)
 intents = intents = discord.Intents.all()
 intents.members = True
@@ -86,7 +89,7 @@ async def load_cogs():
 async def main():
     async with bot:
         await load_cogs()
-        await bot.start(config.TOKEN)
+        await bot.start(TOKEN)
 
 if __name__ == "__main__":
     asyncio.run(main())
