@@ -5,6 +5,7 @@ from discord.ext import commands
 import random
 from datetime import datetime, timedelta, timezone
 import copy
+import config
 
 detectingfor1a2b = False
 
@@ -12,7 +13,7 @@ class Oneatwob(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.answer = ''
-        self.embed = discord.Embed( colour=0xf4cc3a, 
+        self.embed = discord.Embed( colour=config.color_start, 
                                     title ='<:cjzcj04m3:1220986072906076170> | 1A2B',
                                     description=f'''
                                                 請直接與聊天欄輸入不重複的四位數字以開始遊戲;

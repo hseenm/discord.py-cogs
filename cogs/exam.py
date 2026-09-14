@@ -6,6 +6,7 @@ import json
 import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import config
 
 class tof(discord.ui.View):
     def __init__(self, answer, timeout=180):
@@ -154,7 +155,7 @@ class Exam(commands.Cog):
             view=opt(item["answer"])
             content = ''
             title = '中華民國公路局-新版汽車筆試題庫'
-        embed = discord.Embed(color=0xF27D72, title=f'📜 | {title}({content}`{item["number"]}`)', description=f'```\n{item["question"]}\n```',timestamp=datetime.now())
+        embed = discord.Embed(color=config.color_start, title=f'📜 | {title}({content}`{item["number"]}`)', description=f'```\n{item["question"]}\n```',timestamp=datetime.now())
         embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/1329781718554775572.png?size=160',text='祝你考試順利')
         await interaction.response.send_message(embed=embed, view=view)
 

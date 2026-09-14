@@ -16,6 +16,7 @@ from wordfreq import top_n_list
 from urllib.parse import urlparse
 import asyncio
 import copy
+import config
 
 detecting = False
 
@@ -60,7 +61,7 @@ class ezwordle(commands.Cog):
             chance = ''
         else:
             answercount_ramdoned, chance = self.produce_answercount()
-        return discord.Embed(   colour=0xf4cc3a, 
+        return discord.Embed(   colour=config.color_start, 
                                 title ='<:cjzcj04m3:1220986072906076170> | Wordle',
                                 description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲') , answercount_ramdoned
 
@@ -119,7 +120,7 @@ class ezwordle(commands.Cog):
     async def ezwordle_slash(self, interaction: discord.Interaction, answercount:str = None, threads: bool = None):
         global detecting
         if detecting == True:
-            embederror = discord.Embed(color=0xF27D72, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
+            embederror = discord.Embed(color=config.color_error, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
             embederror.set_footer(text=self.wordleguild.name, icon_url=self.wordleguild.icon.url)
             await interaction.response.send_message(embed = embederror)
         elif detecting == False:
@@ -135,7 +136,7 @@ class ezwordle(commands.Cog):
     async def ezwordle_trad(self, ctx, answercount:str = None, threads: bool = None):
         global detecting
         if detecting == True:
-            embederror = discord.Embed(color=0xF27D72, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
+            embederror = discord.Embed(color=config.color_error, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
             embederror.set_footer(text=self.wordleguild.name, icon_url=self.wordleguild.icon.url)
             await ctx.reply(embed = embederror, mention_author=False)
         elif detecting == False:

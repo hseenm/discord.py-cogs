@@ -5,6 +5,7 @@ from datetime import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands
+import config
 
 class CommandErrorHandler(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -102,7 +103,7 @@ class CommandErrorHandler(commands.Cog):
             # 未預期錯誤，顯示原始例外訊息
             description = f"發生未預期的系統錯誤：\n```py\n{repr(error)}\n```"
 
-        embed = discord.Embed(title=title, description=description, color=0xED4A34, timestamp=datetime.now())
+        embed = discord.Embed(title=title, description=description, color=config.color_error, timestamp=datetime.now())
         embed.set_footer(text= '以上錯誤訊息顯示格式均為Gemini生成', icon_url='https://cdn.discordapp.com/emojis/1384528692629471242.webp?size=128')
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -139,7 +140,7 @@ class CommandErrorHandler(commands.Cog):
         else:
             description = f"執行時發生未預期的錯誤：\n```py\n{repr(error)}\n```"
 
-        embed = discord.Embed(title=title, description=description, color=0xFF3C3C)
+        embed = discord.Embed(title=title, description=description, color=config.color_error)
 
         if interaction.response.is_done():
             await interaction.followup.send(embed=embed)

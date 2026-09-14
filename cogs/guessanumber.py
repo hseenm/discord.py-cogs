@@ -4,6 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 import random
 from datetime import datetime, timedelta, timezone
+import config
 
 class guessanumber(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -31,14 +32,14 @@ class guessanumber(commands.Cog):
                 now = now + timedelta(hours=1)
                 localnow = now.astimezone()
                 await member.timeout(localnow)
-                embed = discord.Embed(color=0xfeccdc, title='<:aa01:1005429572583559178> MUTE | 看來今天手氣不好啊')
+                embed = discord.Embed(color=config.color_error, title='<:aa01:1005429572583559178> MUTE | 看來今天手氣不好啊')
                 embed.add_field(name='禁言者', value=f'```\n{bot_member.display_name}\n```')
                 embed.add_field(name='被禁言者', value=f'```\n{member.display_name}\n```')
                 embed.add_field(name='禁言時間', value=f'```\n1 Hour\n```')
                 await interaction.channel.send(embed=embed)
             else:
                 await interaction.channel.send('`已取消成員禁言程序`')
-                embed = discord.Embed(color=0x7ef7b9, title='<:aa10:1005430382759526450> Mute Failed | 看來有天神在保佑你')
+                embed = discord.Embed(color=config.color_start, title='<:aa10:1005430382759526450> Mute Failed | 看來有天神在保佑你')
                 embed.add_field(name='禁言者', value=f'~~```\n{bot_member.display_name}\n```~~')
                 embed.add_field(name='被禁言者', value=f'~~```\n{member.display_name}\n```~~')
                 embed.add_field(name='禁言時間', value=f'~~```\n1 Hour\n```~~')

@@ -3,7 +3,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
-import random
+import config
+#import random
 
 class timestamp(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -24,9 +25,7 @@ class timestamp(commands.Cog):
             if minute == None: minute = datetime.now().minute
             time = datetime(year, month, day, hour, minute)
         timestamp = time.timestamp()
-        color_code = hex(random.randint(0, 0xFFFFFF))
-        color = int(color_code, 16)
-        embed=discord.Embed(color=color,
+        embed=discord.Embed(color=config.color_start,
                             title=title,
                             description=f'''\
                             `<t:{int(timestamp)}:t>`  <t:{int(timestamp)}:t>

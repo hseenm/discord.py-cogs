@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import random
+import config
 
 class Other(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -84,7 +85,7 @@ class Other(commands.Cog):
             freezer = interantion.user
         else:
             freezer = member
-        embed = discord.Embed(color=0x665732, title='❄️ | 冰凍', description=f'<@{freezer.id}> 感到很涼爽')
+        embed = discord.Embed(color=config.color_blue, title='❄️ | 冰凍', description=f'<@{freezer.id}> 感到很涼爽')
         embed.set_footer(text='還好沒被豆腐貓咪燙死，下次看好 *warn 再送出')
         await interantion.response.send_message(embed=embed)
     
