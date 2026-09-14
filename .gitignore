@@ -1,3 +1,4 @@
 .env
 __pycache__/
 data/*.log
+data/chat_history.json
