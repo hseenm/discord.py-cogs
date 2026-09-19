@@ -188,7 +188,7 @@ class ezwordle(commands.Cog):
                     listctx[chosen_index] = hint
                     for i in range(self.answercount):
                         if i == chosen_index:
-                            listhint[chosen_index] = emojimap[f"{list1[i].upper()}co"]
+                            listhint[chosen_index] = emojimap[f"{hint.upper()}co"]
                         else:
                             listhint[i] = '⬛'
                     printt = ' '.join(listhint)
