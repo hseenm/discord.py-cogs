@@ -136,8 +136,8 @@ class Exam(commands.Cog):
         if types == None:
             tiku = random.choice(['moto', 'car'])
         else:
-            tiku = None
-        if tiku == 'moto' or types.value == 'moto':
+            tiku = types.value
+        if tiku == 'moto':
             tiku = random.choice(['tof', 'opt'])
             if tiku == 'tof':
                 item = random.choice(self.load_tof())
