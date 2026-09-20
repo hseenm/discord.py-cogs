@@ -118,19 +118,29 @@ class ezwordle(commands.Cog):
     @app_commands.command(name='ezwordle', description='wordle')
     @app_commands.describe(threads='選擇要不要使用討論串', answercount='可以指定要幾個字元')
     async def ezwordle_slash(self, interaction: discord.Interaction, answercount:str = None, threads: bool = None):
-        global detecting
+        global detecting 
+        botmember = interaction.guild.me
+        canManage = botmember.guild_permissions.manage_messages
+        canEmoji = botmember.guild_permissions.use_external_emojis
         if detecting == True:
             embederror = discord.Embed(color=config.color_error, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
             embederror.set_footer(text=self.wordleguild.name, icon_url=self.wordleguild.icon.url)
             await interaction.response.send_message(embed = embederror)
         elif detecting == False:
-            answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
-            if answercount and (answercount not in answercountlist):
-                await interaction.response.send_message(content=f'請輸入 `{" ".join(answercountlist)}` 的其中一個')
-                return
-            embed, answercount_ramdoned = self.begin_embed(threads, answercount)
-            await interaction.response.send_message(embed=embed)
-            await self.randomtheWord(threads, interaction.channel, answercount_ramdoned)
+            if not canEmoji:
+                embedWarn = discord.Embed(color=config.color_warn, description= '⚠️ | 此應用程式未含有使用外部表情符號之權限，遊戲無法正常運行')
+                await interaction.response.send_message(embed=embedWarn)
+            else:
+                answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
+                if answercount and (answercount not in answercountlist):
+                    await interaction.response.send_message(content=f'請輸入 `{" ".join(answercountlist)}` 的其中一個')
+                    return
+                embed, answercount_ramdoned = self.begin_embed(threads, answercount)
+                await interaction.response.send_message(embed=embed)
+                await self.randomtheWord(threads, interaction.channel, answercount_ramdoned)
+                if not canManage:
+                    embedWarn = discord.Embed(color=config.color_warn, description= '⚠️ | 此應用程式未含有刪除訊息之權限，可能導致遊戲錯誤或凌亂')
+                    await interaction.channel.send(embed=embedWarn)
 
     @commands.command(aliases=["ezwordle"])
     async def ezwordle_trad(self, ctx, answercount:str = None, threads: bool = None):
@@ -233,7 +243,10 @@ class ezwordle(commands.Cog):
                     #    printt = '<:summer_:1329781718554775572>'
                     #    bot.damn5 = False
                 #await asyncio.sleep(1)
-                await message.delete()
+                try:
+                    await message.delete()
+                except:
+                    pass
                 maybeaddemojimessage = await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**', silent=True)
                 if content.lower() == self.answer:
                     await maybeaddemojimessage.add_reaction('<:114514:1382967646902816849>' if message.guild == guild else '<:aa10:1005430382759526450>')
