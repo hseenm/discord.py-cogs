@@ -46,6 +46,12 @@ class ezwordle(commands.Cog):
         #global detecting
         in_enchant = self.enchant_dict.check(word)
         in_enchantb = self.enchant_dictb.check(word)
+        #in_brown = word in brown_words
+        if ab == 'b':
+            if not (in_enchant or in_enchantb):
+                print(f"❌ '{word}' 不在 enchant 字典中")
+            #if not in_brown:
+            #    print(f"❌ '{word}' 不在 words 詞庫中")
         return in_enchant or in_enchantb
 
     def begin_embed(self, threads, answercount):
@@ -58,19 +64,6 @@ class ezwordle(commands.Cog):
         return discord.Embed(   colour=config.color_start, 
                                 title ='<:cjzcj04m3:1220986072906076170> | Wordle',
                                 description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲') , answercount_ramdoned
-
-    def begin_container(self, threads, answercount):
-        threadhint = '隨後請於機器人創立的討論串中進行猜答\n' if threads else ''
-        if answercount:
-            answercount_ramdoned = answercount
-            chance = ''
-        else:
-            answercount_ramdoned, chance = self.produce_answercount()
-        container = discord.ui.Container()
-        container.add_item(discord.ui.TextDisplay(f'## <:cjzcj04m3:1220986072906076170> | Wordle\n{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲'))
-        view = discord.ui.LayoutView()
-        view.add_item(container)
-        return view, answercount_ramdoned
 
     def load_emojimap(self):
         with open("./data/emojimap.json", "r", encoding="utf-8") as f:
@@ -135,38 +128,36 @@ class ezwordle(commands.Cog):
             await interaction.response.send_message(embed = embederror)
         elif detecting == False:
             if not canEmoji:
-                containerWarn = discord.ui.Container().add_item(discord.ui.TextDisplay('⚠️ | 此應用程式未含有使用外部表情符號之權限，遊戲無法正常運行'))
-                view = discord.ui.LayoutView().add_item(containerWarn)
-                await interaction.response.send_message(view=view)
+                embedWarn = discord.Embed(color=config.color_warn, description= '⚠️ | 此應用程式未含有使用外部表情符號之權限，遊戲無法正常運行')
+                await interaction.response.send_message(embed=embedWarn)
             else:
                 answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
                 if answercount and (answercount not in answercountlist):
                     await interaction.response.send_message(content=f'請輸入 `{" ".join(answercountlist)}` 的其中一個')
                     return
-                view, answercount_ramdoned = self.begin_container(threads, answercount)
-                await interaction.response.send_message(view=view)
+                embed, answercount_ramdoned = self.begin_embed(threads, answercount)
+                await interaction.response.send_message(embed=embed)
                 await self.randomtheWord(threads, interaction.channel, answercount_ramdoned)
                 if not canManage:
-                    containerWarn = discord.ui.Container().add_item(discord.ui.TextDisplay('⚠️ | 此應用程式未含有刪除訊息之權限，可能導致遊戲錯誤或凌亂'))
-                    view = discord.ui.LayoutView().add_item(containerWarn)
-                    await interaction.channel.send(view=view)
+                    embedWarn = discord.Embed(color=config.color_warn, description= '⚠️ | 此應用程式未含有刪除訊息之權限，可能導致遊戲錯誤或凌亂')
+                    await interaction.channel.send(embed=embedWarn)
 
-    #@commands.command(aliases=["ezwordle"])
-    #async def ezwordle_trad(self, ctx, answercount:str = None, threads: bool = None):
-    #    global detecting
-    #    if detecting == True:
-    #        embederror = discord.Embed(color=config.color_error, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
-    #        embederror.set_footer(text=self.wordleguild.name, icon_url=self.wordleguild.icon.url)
-    #        await ctx.reply(embed = embederror, mention_author=False)
-    #    elif detecting == False:
-    #        answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
-    #        if answercount and (answercount not in answercountlist):
-    #            await ctx.reply(content=f'請輸入 `{" ".join(answercountlist)}` 的其中一個',mention_author=False)
-    #            return
-    #        embed, answercount_ramdoned = self.begin_embed(threads, answercount)
-    #        await ctx.reply(embed=embed,mention_author=False)
-    #        #await ctx.message.delete()
-    #        await self.randomtheWord(threads, ctx.channel, answercount_ramdoned)
+    @commands.command(aliases=["ezwordle"])
+    async def ezwordle_trad(self, ctx, answercount:str = None, threads: bool = None):
+        global detecting
+        if detecting == True:
+            embederror = discord.Embed(color=config.color_error, title=f'遊戲尚未關閉，請先結束遊戲', description=f'遊戲可能位於 <#{self.wordlechannel}>')
+            embederror.set_footer(text=self.wordleguild.name, icon_url=self.wordleguild.icon.url)
+            await ctx.reply(embed = embederror, mention_author=False)
+        elif detecting == False:
+            answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
+            if answercount and (answercount not in answercountlist):
+                await ctx.reply(content=f'請輸入 `{" ".join(answercountlist)}` 的其中一個',mention_author=False)
+                return
+            embed, answercount_ramdoned = self.begin_embed(threads, answercount)
+            await ctx.reply(embed=embed,mention_author=False)
+            #await ctx.message.delete()
+            await self.randomtheWord(threads, ctx.channel, answercount_ramdoned)
 
 
     @commands.Cog.listener()
