@@ -25,17 +25,11 @@ class timestamp(commands.Cog):
             if minute == None: minute = datetime.now().minute
             time = datetime(year, month, day, hour, minute)
         timestamp = time.timestamp()
-        embed=discord.Embed(color=config.color_start,
-                            title=title,
-                            description=f'''\
-                            `<t:{int(timestamp)}:t>`  <t:{int(timestamp)}:t>
-                            `<t:{int(timestamp)}:T>`  <t:{int(timestamp)}:T>
-                            `<t:{int(timestamp)}:d>`  <t:{int(timestamp)}:d>
-                            `<t:{int(timestamp)}:D>`  <t:{int(timestamp)}:D>
-                            `<t:{int(timestamp)}:f>`  <t:{int(timestamp)}:f>
-                            `<t:{int(timestamp)}:F>`  <t:{int(timestamp)}:F>
-                            `<t:{int(timestamp)}:R>`  <t:{int(timestamp)}:R>''')
-        await interaction.response.send_message(embed=embed)
+        container = discord.ui.Container()
+        container.add_item(discord.ui.TextDisplay(f'''`<t:{int(timestamp)}:t>`  <t:{int(timestamp)}:t>\n`<t:{int(timestamp)}:T>`  <t:{int(timestamp)}:T>\n`<t:{int(timestamp)}:d>`  <t:{int(timestamp)}:d>\n`<t:{int(timestamp)}:D>`  <t:{int(timestamp)}:D>\n`<t:{int(timestamp)}:f>`  <t:{int(timestamp)}:f>\n`<t:{int(timestamp)}:F>`  <t:{int(timestamp)}:F>\n`<t:{int(timestamp)}:R>`  <t:{int(timestamp)}:R>'''))
+        view = discord.ui.LayoutView()
+        view.add_item(container)
+        await interaction.response.send_message(view=view)
 
     # 斜線指令 (/ping)
     #@app_commands.command(name="ping", description="測試機器人延遲")
