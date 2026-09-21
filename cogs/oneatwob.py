@@ -13,12 +13,16 @@ class Oneatwob(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.answer = ''
-        self.embed = discord.Embed( colour=config.color_start, 
-                                    title ='<:cjzcj04m3:1220986072906076170> | 1A2B',
-                                    description=f'''
-                                                請直接與聊天欄輸入不重複的四位數字以開始遊戲;
-                                                在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲
-                                                ''')
+        self.container = discord.ui.Container()
+        self.container.add_item(discord.ui.TextDisplay('## <:cjzcj04m3:1220986072906076170> | 1A2B\n請直接與聊天欄輸入不重複的四位數字以開始遊戲\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲'))
+        self.view = discord.ui.LayoutView()
+        self.view.add_item(self.container)
+        #self.embed = discord.Embed( colour=config.color_start, 
+        #                            title ='<:cjzcj04m3:1220986072906076170> | 1A2B',
+        #                            description=f'''
+        #                                        請直接與聊天欄輸入不重複的四位數字以開始遊戲;
+        #                                        在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲
+        #                                        ''')
 
     def is_valid_number(self, number):
         return (len(set(str(number))) == 4)
@@ -43,7 +47,7 @@ class Oneatwob(commands.Cog):
         if detectingfor1a2b == True:
             await interaction.response.send_message(content=f'請先使用`我認輸，可以給答案了`或者將數字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>')
         elif detectingfor1a2b == False:
-            await interaction.response.send_message(embed=self.embed)
+            await interaction.response.send_message(view=self.view)
             await self.oneatwobcode(interaction.channel)
 
     @commands.command(aliases=["1a2b"])
@@ -52,7 +56,7 @@ class Oneatwob(commands.Cog):
         if detectingfor1a2b == True:
             await ctx.send(f'請先使用`我認輸，可以給答案了`或者將數字猜出來結束上一場遊戲\n遊戲可能位於 <#{self.wordlechannel}>')
         elif detectingfor1a2b == False:
-            await ctx.send(embed=self.embed)
+            await ctx.send(view=self.view)
             await self.oneatwobcode(ctx.channel)
 
     @commands.Cog.listener()
