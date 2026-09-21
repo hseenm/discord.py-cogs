@@ -233,7 +233,10 @@ class ezwordle(commands.Cog):
                             list2[i] = emojimap[f'{list1[i]}_']
                     printt = ' '.join(list2)
                 else:
-                    printt = '❌'
+                    listprintt = ['❌']
+                    for i in range(self.answercount-1):
+                        listprintt.append(':black_large_square:')
+                    printt = ' '.join(listprintt)
                 guild = await self.bot.fetch_guild(1175052405776318466)
                 if message.guild == guild and len(content) == self.answercount:
                     if self.damn1 == True and content == 'fish':
