@@ -88,6 +88,14 @@ class Other(commands.Cog):
         embed = discord.Embed(color=config.color_blue, title='❄️ | 冰凍', description=f'<@{freezer.id}> 感到很涼爽')
         embed.set_footer(text='還好沒被豆腐貓咪燙死，下次看好 *warn 再送出')
         await interantion.response.send_message(embed=embed)
+
+    @commands.command()
+    async def announce(self, ctx):
+        container = discord.ui.Container()
+        container.add_item(discord.ui.TextDisplay('Hello World!!!!!'))
+        view = discord.ui.LayoutView()
+        view.add_item(container)
+        await ctx.send(view=view)
     
     # 傳統前綴指令 (!ping)
     #@commands.command(name="ping")
