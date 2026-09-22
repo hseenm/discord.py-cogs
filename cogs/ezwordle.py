@@ -57,7 +57,7 @@ class ezwordle(commands.Cog):
             answercount_ramdoned, chance = self.produce_answercount()
         return discord.Embed(   colour=config.color_start, 
                                 title ='<:cjzcj04m3:1220986072906076170> | Wordle',
-                                description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲') , answercount_ramdoned
+                                description=f'{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n人名地名需首字大寫(或全字大寫)\n其餘單字可以全大寫、全小寫或首字母大寫\n若大小寫混用(例如: aUDiO)就會不行\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲') , answercount_ramdoned
 
     def begin_container(self, threads, answercount):
         threadhint = '隨後請於機器人創立的討論串中進行猜答\n' if threads else ''
@@ -67,7 +67,7 @@ class ezwordle(commands.Cog):
         else:
             answercount_ramdoned, chance = self.produce_answercount()
         container = discord.ui.Container()
-        container.add_item(discord.ui.TextDisplay(f'## <:cjzcj04m3:1220986072906076170> | Wordle\n{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n請使用小寫字母\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲'))
+        container.add_item(discord.ui.TextDisplay(f'## <:cjzcj04m3:1220986072906076170> | Wordle\n{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n人名地名需首字大寫(或全字大寫)\n其餘單字可以全大寫、全小寫或首字母大寫\n若大小寫混用(例如: aUDiO)就會不行\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲'))
         view = discord.ui.LayoutView()
         view.add_item(container)
         return view, answercount_ramdoned
