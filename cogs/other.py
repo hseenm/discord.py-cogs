@@ -51,8 +51,11 @@ class Other(commands.Cog):
             else:
                 cmd_list.append(f"*{cmd.name}")
         description = "\n".join(cmd_list + owner)
-        embed = discord.Embed(description=description, color=0x00BFFF)
-        await ctx.send(embed=embed)
+        container = discord.ui.Container()
+        container.add_item(discord.ui.TextDisplay(description))
+        view = discord.ui.LayoutView()
+        view.add_item(container)
+        await ctx.send(view=view)
 
     @commands.command(name="ping")
     async def ping_cmd(self, ctx: commands.Context):
