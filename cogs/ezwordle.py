@@ -40,7 +40,8 @@ class ezwordle(commands.Cog):
             answercountlist = ['3', '4', '5', '6', '7', '8', '9', '10']
             answercount_ramdoned = random.choices(answercountlist, weights=[5, 15, 20, 50, 4, 3, 2, 1])[0]
             chance = '\n字母數出現的機率如下\n`  3   4   5   6   7   8   9  10`\n` 5% 15% 20% 50%  4%  3%  2%  1%`'
-            return answercount_ramdoned, chance
+            chance_big = '\n字母數出現的機率如下\n```\n  3   4   5   6   7   8   9  10\n 5% 15% 20% 50%  4%  3%  2%  1%\n```'
+            return answercount_ramdoned, chance_big
 
     def is_valid_word(self, word, ab):
         #global detecting
@@ -67,7 +68,12 @@ class ezwordle(commands.Cog):
         else:
             answercount_ramdoned, chance = self.produce_answercount()
         container = discord.ui.Container()
-        container.add_item(discord.ui.TextDisplay(f'## <:cjzcj04m3:1220986072906076170> | Wordle\n{threadhint}隨機有點久，請耐心等候\n當機器人傳 **開始遊戲** 時，即開始遊戲\n人名地名需首字大寫(或全字大寫)\n其餘單字可以全大寫、全小寫或首字母大寫\n若大小寫混用(例如: aUDiO)就會不行\n出現的單字將是 **{answercount_ramdoned}** 個字母{chance}\n在訊息欄輸入 `我認輸，可以給答案了` 即可結束遊戲'))
+        container.add_item(discord.ui.TextDisplay(f'## <:cjzcj04m3:1220986072906076170> | Wordle\n{threadhint}當機器人傳 **開始遊戲** 時，即開始遊戲'))
+        container.add_item(discord.ui.Separator())
+        container.add_item(discord.ui.TextDisplay('大小寫可隨意混用\n開始遊戲後的數字為單字在列表中的先後順序\n可能伴隨著此次單字的難易度\n僅供參考'))
+        container.add_item(discord.ui.TextDisplay(f'出現的單字將是 **{answercount_ramdoned}** 個字母{chance}'))
+        container.add_item(discord.ui.Separator())
+        container.add_item(discord.ui.TextDisplay('輸入 `我認輸，可以給答案了` 即可結束遊戲'))
         view = discord.ui.LayoutView()
         view.add_item(container)
         return view, answercount_ramdoned
@@ -217,7 +223,7 @@ class ezwordle(commands.Cog):
                     await asyncio.sleep(1)
                     await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**')
             elif len(content) == self.answercount:
-                if self.is_valid_word(content, 'b'):
+                if self.is_valid_word(content, 'b') or self.is_valid_word(content.lower(), 'b') or self.is_valid_word(content.lower().capitalize(), 'b'):
                     list0 = list(self.answer)
                     list1 = list(content)
                     list2 = copy.deepcopy(list1[:self.answercount])
