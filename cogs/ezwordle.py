@@ -98,6 +98,7 @@ class ezwordle(commands.Cog):
         filtered = [
             w for w in common_words
             if len(w) == int(answercount)
+            and w.isalpha()
             and lemmatizer.lemmatize(w, pos='v') == w  # 過濾過去式、完成式
             and lemmatizer.lemmatize(w, pos='n') == w  # 過濾複數名詞
             #and self.is_valid_word(w, 'a')
@@ -223,7 +224,12 @@ class ezwordle(commands.Cog):
                     await asyncio.sleep(1)
                     await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**')
             elif len(content) == self.answercount:
-                if self.is_valid_word(content, 'b') or self.is_valid_word(content.lower(), 'b') or self.is_valid_word(content.lower().capitalize(), 'b'):
+                if any(char.isdigit() for char in content):
+                    listprintt = ['❌']
+                    for i in range(self.answercount-1):
+                        listprintt.append(':black_large_square:')
+                    printt = ' '.join(listprintt)
+                elif self.is_valid_word(content, 'b') or self.is_valid_word(content.lower(), 'b') or self.is_valid_word(content.lower().capitalize(), 'b'):
                     list0 = list(self.answer)
                     list1 = list(content)
                     list2 = copy.deepcopy(list1[:self.answercount])
