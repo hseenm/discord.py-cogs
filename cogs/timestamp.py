@@ -4,7 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
 import config
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo #pip install tzdata
 #import random
 
 class timestamp(commands.Cog):
