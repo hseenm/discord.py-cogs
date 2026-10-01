@@ -4,6 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
 import config
+from zoneinfo import ZoneInfo
 #import random
 
 class timestamp(commands.Cog):
@@ -12,17 +13,18 @@ class timestamp(commands.Cog):
 
     @app_commands.command(name='timestamp', description='生成Unix時間戳')
     @app_commands.describe(year = '輸入指定時間的年份(西元)', month = '輸入指定時間的月份', day = '輸入指定時間的日期', hour = '輸入指定時間的時', minute = '輸入指定時間的分')
-    async def timestamp(self, interaction: discord.Interaction, year :int = None, month:int = None, day : int =None, hour : int= None, minute:int =None, title:str =None):
+    async def timestamp(self, interaction: discord.Interaction, year :int = None, month:int = None, day : int =None, hour : int= None, minute:int =None):
 
+        tw_tz = ZoneInfo("Asia/Taipei")
+        now = datetime.now(tw_tz)
         if year == None and month == None and day == None and hour == None and minute == None:
-            time = datetime.now()
+            time = now()
         else:
-            if year == None: year = datetime.now().year
-            if month == None: month = datetime.now().month
-            if day == None: day = datetime.now().day
-            if hour == None: hour = datetime.now().hour
-            else: hour = hour -8
-            if minute == None: minute = datetime.now().minute
+            if year == None: year = now().year
+            if month == None: month = now().month
+            if day == None: day = now().day
+            if hour == None: hour = now().hour
+            if minute == None: minute = now().minute
             time = datetime(year, month, day, hour, minute)
         timestamp = time.timestamp()
         container = discord.ui.Container()
