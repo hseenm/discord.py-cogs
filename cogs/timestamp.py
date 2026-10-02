@@ -18,7 +18,7 @@ class timestamp(commands.Cog):
         tw_tz = ZoneInfo("Asia/Taipei")
         now = datetime.now(tw_tz)
         if year == None and month == None and day == None and hour == None and minute == None:
-            time = now()
+            time = now
         else:
             if year == None: year = now().year
             if month == None: month = now().month
