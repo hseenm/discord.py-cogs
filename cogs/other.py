@@ -99,7 +99,24 @@ class Other(commands.Cog):
         view = discord.ui.LayoutView()
         view.add_item(container)
         await ctx.send(view=view)
-    
+
+    @commands.command(aliases=['avatar'])
+    async def avatar_trad(self, ctx, member: discord.Member, guild: bool = None):
+        if guild:
+            avatarIcon = member.guild_avatar.url
+        else:
+            avatarIcon = member.avatar.url
+        await ctx.send(avatarIcon)
+
+    @app_commands.command(name="avatar", description="取得成員頭像")
+    @app_commands.describe(member = '選擇要指定哪一位成員', guild = '選擇成員的伺服器個人檔案頭像')
+    async def avatar_slash(self, interaction: discord.Integration, member: discord.Member, guild: bool = None):
+        if guild:
+            avatarIcon = member.guild_avatar.url
+        else:
+            avatarIcon = member.avatar.url
+        await interaction.response.send_message(content = avatarIcon)
+            
     # 傳統前綴指令 (!ping)
     #@commands.command(name="ping")
     #async def ping_cmd(self, ctx: commands.Context):
