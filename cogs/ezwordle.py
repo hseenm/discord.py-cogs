@@ -271,7 +271,7 @@ class ezwordle(commands.Cog):
                     await message.delete()
                 except:
                     pass
-                maybeaddemojimessage = await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}**', silent=True)
+                maybeaddemojimessage = await message.channel.send(f'`{content}` → {printt} #**{message.author.display_name}** ({message.author.name})', silent=True)
                 if content.lower() == self.answer:
                     await maybeaddemojimessage.add_reaction('<:114514:1382967646902816849>' if message.guild == guild else '<:aa10:1005430382759526450>')
                     self.answer = None

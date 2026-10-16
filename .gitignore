@@ -4,3 +4,4 @@ cogs/__pycache__/
 data/*.log
 data/chat_history.json
 data/voicelog.json
+.vscode/
