@@ -14,11 +14,19 @@ import time
 
 logger = logging.getLogger(__name__)
 
-# 公開可用的 Lavalink v4 節點池（僅保留單一穩定 SSL 節點，避免同伺服器雙連線互搶 Session 造成語音斷線）
+# Lavalink v4 節點池（依優先順序排列）
+# ⚠️ 同一時間「只會連線第一個健康的節點」，其餘為備用節點；只有目前節點掛掉或 Session 失效時才依序切換，
+#    避免多節點同時搶同一伺服器語音 Session 而造成機器人進進出出。
 PUBLIC_LAVALINK_NODES = [
     {
         "identifier": "Serenetia-SSL",
         "uri": "https://lavalinkv4.serenetia.com:443",
+        "password": "https://dsc.gg/ajidevserver",
+    },
+    {
+        # 備用節點：同一主機的非 SSL 通道（當 SSL 通道瞬斷或憑證異常時自動接手，且支援 Bilibili 與 YouTube）
+        "identifier": "Serenetia-HTTP",
+        "uri": "http://lavalinkv4.serenetia.com:80",
         "password": "https://dsc.gg/ajidevserver",
     },
 ]
@@ -171,6 +179,118 @@ def is_node_healthy(node: Optional[wavelink.Node]) -> bool:
     return True
 
 
+# ==================== 單一活躍節點 + 依序備援（Failover） ====================
+# 機器人「同一時間只連線一個」Lavalink 節點；只有在目前節點掛掉或 Session 失效時，才依序切換到下一個備用節點。
+# 這樣既有備用節點，又不會因為多個節點同時搶同一個伺服器的語音 Session 而導致機器人進進出出。
+
+_NODE_SWITCH_LOCK = asyncio.Lock()
+_active_cfg_index: int = 0
+
+
+def _valid_node_ids() -> set[str]:
+    return {cfg["identifier"] for cfg in PUBLIC_LAVALINK_NODES}
+
+
+def get_active_node() -> Optional[wavelink.Node]:
+    """取得目前唯一的健康活躍節點（若沒有則回傳 None）"""
+    internal_nodes: dict[str, wavelink.Node] = getattr(wavelink.Pool, "_Pool__nodes", {})
+    valid_ids = _valid_node_ids()
+    for nid, n in internal_nodes.items():
+        if nid in valid_ids and is_node_healthy(n):
+            return n
+    return None
+
+
+async def _close_node(node: wavelink.Node) -> None:
+    """安全關閉節點的 WebSocket 與 HTTP Session（不會觸發 wavelink 自動重連）"""
+    try:
+        node._retries = 0
+        node._players.clear()
+        ws = getattr(node, "_websocket", None)
+        if ws is not None:
+            if ws.keep_alive_task:
+                ws.keep_alive_task.cancel()
+            if ws.socket:
+                await ws.socket.close()
+        if node._session and not node._session.closed:
+            await node._session.close()
+        node._status = wavelink.NodeStatus.DISCONNECTED
+    except Exception:
+        pass
+
+
+async def _purge_nodes(keep: Optional[wavelink.Node] = None) -> None:
+    """移除 Pool 中除了 keep 以外的所有節點，確保同一時間只有一個節點存在"""
+    internal_nodes: dict[str, wavelink.Node] = getattr(wavelink.Pool, "_Pool__nodes", {})
+    for nid in list(internal_nodes.keys()):
+        n = internal_nodes.get(nid)
+        if n is not None and n is keep:
+            continue
+        old = internal_nodes.pop(nid, None)
+        if old is not None:
+            await _close_node(old)
+
+
+async def connect_failover_node(
+    client: discord.Client,
+    *,
+    stale_node: Optional[wavelink.Node] = None,
+    advance_node: bool = False,
+) -> tuple[Optional[wavelink.Node], bool]:
+    """
+    確保有一個健康的活躍節點，回傳 (節點, 是否有更換/重建節點)。
+    - 若目前節點健康且不是 stale_node 且未要求 advance_node → 直接沿用（不做任何切換）。
+    - 若 advance_node=True，優先從下一個備用節點開始嘗試；否則先重建同一個節點（處理 Session 404），失敗再切換備用節點。
+    """
+    global _active_cfg_index
+    async with _NODE_SWITCH_LOCK:
+        active = get_active_node()
+        if active is not None and active is not stale_node and not advance_node:
+            await _purge_nodes(keep=active)
+            return active, False
+
+        total = len(PUBLIC_LAVALINK_NODES)
+        if not total:
+            return None, False
+        start = ((_active_cfg_index + 1) % total) if advance_node else (_active_cfg_index % total)
+        for offset in range(total):
+            idx = (start + offset) % total
+            cfg = PUBLIC_LAVALINK_NODES[idx]
+            await _purge_nodes()
+            node = wavelink.Node(
+                identifier=cfg["identifier"],
+                uri=cfg["uri"],
+                password=cfg["password"],
+                inactive_player_timeout=300,
+                retries=1,
+            )
+            try:
+                await asyncio.wait_for(wavelink.Pool.connect(client=client, nodes=[node]), timeout=8)
+            except Exception as e:
+                logger.warning("節點 %s 連線失敗: %r", cfg["identifier"], e)
+                await _close_node(node)
+                continue
+
+            for _ in range(16):
+                if is_node_healthy(node):
+                    break
+                await asyncio.sleep(0.25)
+
+            if is_node_healthy(node):
+                if idx != _active_cfg_index:
+                    logger.warning("🔁 已切換至備用 Lavalink 節點：%s", cfg["identifier"])
+                _active_cfg_index = idx
+                return node, True
+
+            logger.warning("節點 %s 無回應，嘗試下一個備用節點", cfg["identifier"])
+
+        await _purge_nodes()
+        return None, False
+
+
+DEFAULT_PLAYER_VOLUME = 9
+
+
 class MusicPlayer(wavelink.Player):
     """自訂 Wavelink Player，修復語音連線競態條件並支援 Session 404 無縫重建（不退出語音頻道）"""
 
@@ -184,48 +304,35 @@ class MusicPlayer(wavelink.Player):
         if valid_nodes and "nodes" not in kwargs:
             kwargs["nodes"] = valid_nodes
         super().__init__(*args, **kwargs)
+        # 預設音量改為 9%（原為 100%）
+        self._volume: int = DEFAULT_PLAYER_VOLUME
+        self._volume_customized: bool = False
         self.home_channel: Optional[discord.abc.Messageable] = None
         self.now_playing_message: Optional[discord.Message] = None
         self._voice_dispatch_lock: asyncio.Lock = asyncio.Lock()
         self._last_dispatched_voice: Optional[tuple[str, str, str, Optional[str]]] = None
+        # 記錄此播放器目前綁定的節點 Session，用於偵測節點重建 / 切換後需要重新綁定並續播
+        self._bound_session: Optional[str] = None
         # 預設啟用 partial 自動播放（自動從 queue 取下一首並支援單曲/清單循環）
         self.autoplay = wavelink.AutoPlayMode.partial
 
-    async def refresh_node_session(self) -> bool:
-        """當 Lavalink Session 過期 (HTTP 404) 時，在背景重建全新 Node 實例並重新綁定語音狀態，絕不離開語音頻道"""
-        internal_nodes: dict[str, wavelink.Node] = getattr(wavelink.Pool, "_Pool__nodes", {})
-        for nid in list(internal_nodes.keys()):
-            old_n = internal_nodes.pop(nid, None)
-            if old_n:
-                try:
-                    old_n._retries = 0
-                    old_n._players.clear()
-                    if old_n._websocket is not None:
-                        if old_n._websocket.keep_alive_task:
-                            old_n._websocket.keep_alive_task.cancel()
-                        if old_n._websocket.socket:
-                            await old_n._websocket.socket.close()
-                    if old_n._session and not old_n._session.closed:
-                        await old_n._session.close()
-                except Exception:
-                    pass
+    async def play(self, track: wavelink.Playable, **kwargs) -> wavelink.Playable:
+        result = await super().play(track, **kwargs)
+        # Lavalink 已在此節點 Session 上建立播放狀態，記錄下來供看門狗判斷是否需要續播
+        self._bound_session = self.node.session_id
+        return result
 
-        cfg = PUBLIC_LAVALINK_NODES[0]
-        new_node = wavelink.Node(
-            identifier=cfg["identifier"],
-            uri=cfg["uri"],
-            password=cfg["password"],
-            inactive_player_timeout=300,
-            retries=2,
-        )
-        try:
-            await wavelink.Pool.connect(client=self.client, nodes=[new_node])
-            for _ in range(16):
-                if is_node_healthy(new_node):
-                    break
-                await asyncio.sleep(0.25)
-        except Exception as e:
-            logger.warning("重建節點 %s 失敗: %s", cfg["identifier"], e)
+    async def _auto_play_event(self, payload: wavelink.TrackEndEventPayload) -> None:
+        # loadFailed 交由 Music.on_wavelink_track_end 統一處理「重試 3 次 → 報錯 → 播下一首」，
+        # 避免 wavelink 內建 autoplay 同時搶先播放下一首，造成歌曲被覆蓋或佇列被多跳一首
+        if payload.reason == "loadFailed":
+            return
+        await super()._auto_play_event(payload)
+
+    async def refresh_node_session(self) -> bool:
+        """當 Lavalink Session 過期 (HTTP 404) 時，重建節點（失敗則切換備用節點）並重新綁定語音狀態，絕不離開語音頻道"""
+        new_node, _ = await connect_failover_node(self.client, stale_node=self._node)
+        if new_node is None:
             return False
 
         self._node = new_node
@@ -306,37 +413,14 @@ class MusicPlayer(wavelink.Player):
                     break
                 except wavelink.LavalinkException as le:
                     if getattr(le, "status", None) == 404 and attempt == 0:
-                        logger.warning("節點 %s Session 404，正在背景重建全新節點...", self.node.identifier)
+                        logger.warning("節點 %s Session 404，正在重建節點（失敗則切換備用節點）...", self.node.identifier)
                         try:
-                            internal_nodes: dict[str, wavelink.Node] = getattr(wavelink.Pool, "_Pool__nodes", {})
-                            for nid in list(internal_nodes.keys()):
-                                old_n = internal_nodes.pop(nid, None)
-                                if old_n:
-                                    old_n._retries = 0
-                                    old_n._players.clear()
-                                    if old_n._websocket and old_n._websocket.keep_alive_task:
-                                        old_n._websocket.keep_alive_task.cancel()
-                                    if old_n._websocket and old_n._websocket.socket:
-                                        await old_n._websocket.socket.close()
-                                    if old_n._session and not old_n._session.closed:
-                                        await old_n._session.close()
-                            cfg = PUBLIC_LAVALINK_NODES[0]
-                            new_node = wavelink.Node(
-                                identifier=cfg["identifier"],
-                                uri=cfg["uri"],
-                                password=cfg["password"],
-                                inactive_player_timeout=300,
-                                retries=2,
-                            )
-                            await wavelink.Pool.connect(client=self.client, nodes=[new_node])
-                            for _ in range(16):
-                                if is_node_healthy(new_node):
-                                    break
-                                await asyncio.sleep(0.25)
-                            self._node = new_node
-                            self.node._players[self.guild.id] = self
-                            state_key = (session_id, token, endpoint, channel_id, self.node.session_id)
-                            continue
+                            new_node, _ = await connect_failover_node(self.client, stale_node=self._node)
+                            if new_node is not None:
+                                self._node = new_node
+                                self.node._players[self.guild.id] = self
+                                state_key = (session_id, token, endpoint, channel_id, self.node.session_id)
+                                continue
                         except Exception as re_err:
                             logger.warning("重建節點失敗: %s", re_err)
                     try:
@@ -387,7 +471,7 @@ class SearchSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
-            return await interaction.response.send_message("❌ 只有發起搜尋的使用者可以選擇歌曲！", ephemeral=True)
+            return await interaction.response.send_message("❌ 只有發起搜尋的使用者可以選擇歌曲！", ephemeral=True, silent=True)
 
         await interaction.response.defer()
         selected_idx = int(self.values[0])
@@ -404,8 +488,13 @@ class SearchSelect(discord.ui.Select):
             if not player.playing and not player.paused:
                 next_track = await player.queue.get_wait()
                 await self.cog.safe_play(player, next_track)
-                np_view = MusicControlView(self.cog, player, next_track)
-                await interaction.edit_original_response(view=np_view)
+                # 正在播放面板由 on_wavelink_track_start 統一發送，這裡只更新為「準備播放」避免出現兩個面板
+                ready_view = create_container_view(
+                    "🔎 | 準備播放",
+                    f"已選擇：**[{next_track.title}]({next_track.uri or 'https://youtube.com'})**，準備開始播放...",
+                    thumbnail_url=next_track.artwork,
+                )
+                await interaction.edit_original_response(view=ready_view)
             else:
                 added_view = create_container_view(
                     "📋 | 已加入待播清單",
@@ -544,6 +633,14 @@ class QueuePaginationView(discord.ui.LayoutView):
 
         self.add_item(container)
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(
+                "❌ 只有開啟此清單的使用者可以翻頁！", ephemeral=True, silent=True
+            )
+            return False
+        return True
+
     async def _on_prev(self, interaction: discord.Interaction):
         if self.current_page > 0:
             self.current_page -= 1
@@ -650,11 +747,15 @@ class MusicControlView(discord.ui.LayoutView):
 
     async def _check_same_voice(self, interaction: discord.Interaction) -> bool:
         if not self.player or not self.player.connected:
-            await interaction.response.send_message("❌ 機器人目前未連線至語音頻道。", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ 機器人目前未連線至語音頻道。", ephemeral=True, silent=True
+            )
             return False
         user_voice = getattr(interaction.user, "voice", None)
         if not user_voice or user_voice.channel != self.player.channel:
-            await interaction.response.send_message("❌ 你必須與機器人在同一個語音頻道才能操作面板！", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ 你必須與機器人在同一個語音頻道才能操作面板！", ephemeral=True, silent=True
+            )
             return False
         return True
 
@@ -662,19 +763,23 @@ class MusicControlView(discord.ui.LayoutView):
         if not await self._check_same_voice(interaction):
             return
         if not self.player.current:
-            return await interaction.response.send_message("❌ 目前沒有正在播放的音樂。", ephemeral=True)
+            return await interaction.response.send_message(
+                "❌ 目前沒有正在播放的音樂。", ephemeral=True, silent=True
+            )
 
         await self.player.pause(not self.player.paused)
         state = "⏸️ 已暫停播放" if self.player.paused else "▶️ 已繼續播放"
         self.rebuild()
         await interaction.response.edit_message(view=self)
-        await interaction.followup.send(state, ephemeral=True)
+        await interaction.followup.send(state, ephemeral=True, silent=True)
 
     async def _on_skip(self, interaction: discord.Interaction):
         if not await self._check_same_voice(interaction):
             return
         if not self.player.current:
-            return await interaction.response.send_message("❌ 目前沒有可跳過的音樂。", ephemeral=True)
+            return await interaction.response.send_message(
+                "❌ 目前沒有可跳過的音樂。", ephemeral=True, silent=True
+            )
 
         skipped_title = self.player.current.title
         try:
@@ -687,7 +792,8 @@ class MusicControlView(discord.ui.LayoutView):
                     next_t = await self.player.queue.get_wait()
                     await self.cog.safe_play(self.player, next_t)
         await interaction.response.send_message(
-            view=create_container_view("⏭️ | 已跳過歌曲", f"已跳過 **{skipped_title}**")
+            view=create_container_view("⏭️ | 已跳過歌曲", f"已跳過 **{skipped_title}**"),
+            silent=True,
         )
 
     async def _on_loop(self, interaction: discord.Interaction):
@@ -707,27 +813,32 @@ class MusicControlView(discord.ui.LayoutView):
         if self.player.current:
             self.rebuild()
             await interaction.response.edit_message(view=self)
-            await interaction.followup.send(msg, ephemeral=True)
+            await interaction.followup.send(msg, ephemeral=True, silent=True)
         else:
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(msg, ephemeral=True, silent=True)
 
     async def _on_shuffle(self, interaction: discord.Interaction):
         if not await self._check_same_voice(interaction):
             return
         if len(self.player.queue) < 2:
-            return await interaction.response.send_message("❌ 待播清單至少要有 2 首歌才能隨機打亂。", ephemeral=True)
+            return await interaction.response.send_message(
+                "❌ 待播清單至少要有 2 首歌才能隨機打亂。", ephemeral=True, silent=True
+            )
 
         self.player.queue.shuffle()
         await interaction.response.send_message(
             f"🔀 已隨機打亂待播清單中的 **{len(self.player.queue)}** 首歌曲！",
             ephemeral=True,
+            silent=True,
         )
 
     async def _on_queue(self, interaction: discord.Interaction):
         if not self.player or not self.player.connected:
-            return await interaction.response.send_message("❌ 機器人目前未連線至語音頻道。", ephemeral=True)
+            return await interaction.response.send_message(
+                "❌ 機器人目前未連線至語音頻道。", ephemeral=True, silent=True
+            )
         view = QueuePaginationView(self.player, interaction.user.id)
-        await interaction.response.send_message(view=view, ephemeral=True)
+        await interaction.response.send_message(view=view, ephemeral=True, silent=True)
 
     async def _on_stop(self, interaction: discord.Interaction):
         if not await self._check_same_voice(interaction):
@@ -743,7 +854,8 @@ class MusicControlView(discord.ui.LayoutView):
             view=create_container_view(
                 "⏹️ | 已停止播放",
                 "已停止播放並讓機器人離開語音頻道。",
-            )
+            ),
+            silent=True,
         )
 
 
@@ -752,18 +864,20 @@ class Music(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self._node_connect_lock = asyncio.Lock()
         self._startup_task: Optional[asyncio.Task] = None
+        self._watchdog_task: Optional[asyncio.Task] = None
         self._empty_vc_tasks: dict[int, asyncio.Task] = {}
 
     async def cog_load(self):
         """當模組載入或 *reload music 時自動連線節點並同步指令"""
         self._startup_task = asyncio.create_task(self._initialize_music_cog())
+        self._watchdog_task = asyncio.create_task(self._node_watchdog())
 
     async def cog_unload(self):
         """當模組卸載時取消背景任務"""
-        if self._startup_task and not self._startup_task.done():
-            self._startup_task.cancel()
+        for t in (self._startup_task, self._watchdog_task):
+            if t and not t.done():
+                t.cancel()
         for task in self._empty_vc_tasks.values():
             if not task.done():
                 task.cancel()
@@ -783,74 +897,104 @@ class Music(commands.Cog):
             setattr(player, "home_channel", None)
         if not hasattr(player, "now_playing_message"):
             setattr(player, "now_playing_message", None)
+        if not hasattr(player, "_volume_customized"):
+            setattr(player, "_volume_customized", False)
+        if not getattr(player, "_volume_customized", False) and getattr(player, "_volume", 100) in (100, 30, 15):
+            player._volume = DEFAULT_PLAYER_VOLUME
+        if not hasattr(player, "_bound_session"):
+            setattr(player, "_bound_session", getattr(player.node, "session_id", None))
         return player  # type: ignore
 
+    async def _rebind_players(self, node: wavelink.Node) -> None:
+        """將所有語音中的播放器綁定到目前活躍節點；若節點已更換/重建，從原本的進度無縫續播（不離開語音頻道）"""
+        for g in self.bot.guilds:
+            vc = g.voice_client
+            if not isinstance(vc, wavelink.Player):
+                continue
+            p = self._upgrade_player_instance(vc)
+            if p is None or getattr(p, "channel", None) is None:
+                continue
+
+            current = p._current
+            node_changed = p._node is not node
+            session_changed = getattr(p, "_bound_session", None) != node.session_id
+            if not node_changed and not (current and session_changed):
+                continue
+
+            position = p.position
+            paused = p.paused
+            p._node = node
+            node._players[g.id] = p
+            p._last_dispatched_voice = None
+            try:
+                await p._dispatch_voice_update(force=True)
+                if current:
+                    if current.length and current.length > 0 and not current.is_stream:
+                        position = max(0, min(position, current.length - 1000))
+                    else:
+                        position = 0
+                    await p.play(
+                        current,
+                        replace=True,
+                        start=position,
+                        volume=p.volume,
+                        paused=paused,
+                        add_history=False,
+                    )
+                    logger.info("[%s] 已在節點 %s 從 %s 續播「%s」", g.name, node.identifier, format_duration(position), current.title)
+            except Exception as e:
+                logger.warning("[%s] 重新綁定節點 %s 失敗: %r", g.name, node.identifier, e)
+            finally:
+                p._bound_session = node.session_id
+
+    async def _failover_and_rebind(
+        self,
+        stale_node: Optional[wavelink.Node] = None,
+        *,
+        advance_node: bool = False,
+    ) -> Optional[wavelink.Node]:
+        node, changed = await connect_failover_node(
+            self.bot, stale_node=stale_node, advance_node=advance_node
+        )
+        if node is not None and changed:
+            await self._rebind_players(node)
+        return node
+
+    async def _node_watchdog(self):
+        """背景看門狗：每 10 秒檢查一次節點健康度，掛掉時自動切換備用節點並續播（不離開語音頻道）"""
+        await self.bot.wait_until_ready()
+        while True:
+            try:
+                await asyncio.sleep(10)
+                has_players = any(isinstance(g.voice_client, wavelink.Player) for g in self.bot.guilds)
+                if not has_players:
+                    continue
+                node = get_active_node()
+                if node is None:
+                    logger.warning("看門狗偵測到 Lavalink 節點離線，正在切換備用節點...")
+                    node = await self._failover_and_rebind()
+                if node is not None:
+                    await self._rebind_players(node)
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.warning("節點看門狗發生錯誤: %r", e)
+
     async def rebuild_fresh_node(self, player: Optional[wavelink.Player] = None) -> Optional[wavelink.Node]:
-        """強制清除所有失效或 Session 404 的舊節點，建立全新 Node 實例並無縫重新綁定所有語音中的 Player"""
-        async with self._node_connect_lock:
-            internal_nodes: dict[str, wavelink.Node] = getattr(wavelink.Pool, "_Pool__nodes", {})
-            for nid in list(internal_nodes.keys()):
-                old_node = internal_nodes.pop(nid, None)
-                if old_node:
-                    try:
-                        old_node._retries = 0
-                        old_node._players.clear()
-                        if old_node._websocket is not None:
-                            if old_node._websocket.keep_alive_task:
-                                old_node._websocket.keep_alive_task.cancel()
-                            if old_node._websocket.socket:
-                                await old_node._websocket.socket.close()
-                        if old_node._session and not old_node._session.closed:
-                            await old_node._session.close()
-                        old_node._status = wavelink.NodeStatus.DISCONNECTED
-                    except Exception:
-                        pass
-
-            cfg = PUBLIC_LAVALINK_NODES[0]
-            new_node = wavelink.Node(
-                identifier=cfg["identifier"],
-                uri=cfg["uri"],
-                password=cfg["password"],
-                inactive_player_timeout=300,
-                retries=2,
-            )
-            await wavelink.Pool.connect(client=self.bot, nodes=[new_node])
-            for _ in range(16):
-                if is_node_healthy(new_node):
-                    break
-                await asyncio.sleep(0.25)
-
-            # 將所有伺服器中已連線的語音播放器無縫綁定至新節點
-            for g in self.bot.guilds:
-                vc = g.voice_client
-                if vc and isinstance(vc, wavelink.Player):
-                    upgraded = self._upgrade_player_instance(vc)
-                    if upgraded:
-                        upgraded._node = new_node
-                        new_node._players[g.id] = upgraded
-                        upgraded._last_dispatched_voice = None
-                        try:
-                            await upgraded._dispatch_voice_update(force=True)
-                        except Exception:
-                            pass
-
-            return new_node if is_node_healthy(new_node) else None
+        """強制重建 Session 404 的節點（失敗則切換備用節點），並無縫重新綁定所有語音中的 Player"""
+        stale = player.node if player is not None else get_active_node()
+        return await self._failover_and_rebind(stale_node=stale)
 
     async def _initialize_music_cog(self):
         await self.bot.wait_until_ready()
-        await self.ensure_nodes_connected()
-        healthy = self.get_connected_nodes()
-        for g in self.bot.guilds:
-            vc = g.voice_client
-            if vc and isinstance(vc, wavelink.Player):
-                upgraded = self._upgrade_player_instance(vc)
-                if upgraded and healthy:
-                    if all(upgraded._node is not hn for hn in healthy):
-                        upgraded._node = healthy[0]
-                    upgraded.node._players[g.id] = upgraded
-                    upgraded._last_dispatched_voice = None
+        node = await self._failover_and_rebind()
+        if node is not None:
+            await self._rebind_players(node)
+            for g in self.bot.guilds:
+                vc = g.voice_client
+                if isinstance(vc, MusicPlayer) and not getattr(vc, "_volume_customized", False) and vc.volume == DEFAULT_PLAYER_VOLUME:
                     try:
-                        await upgraded._dispatch_voice_update(force=True)
+                        await vc.set_volume(DEFAULT_PLAYER_VOLUME)
                     except Exception:
                         pass
         try:
@@ -859,96 +1003,13 @@ class Music(commands.Cog):
             logger.debug("同步斜線指令略過或失敗: %s", e)
 
     async def ensure_nodes_connected(self) -> bool:
-        """確保至少有一個設定池內的 Lavalink v4 節點處於健康連線狀態，並安全移除舊版或殭屍節點"""
-        valid_ids = {cfg["identifier"] for cfg in PUBLIC_LAVALINK_NODES}
-        internal_nodes: dict[str, wavelink.Node] = getattr(wavelink.Pool, "_Pool__nodes", {})
-        stale_ids = [
-            nid
-            for nid, n in list(internal_nodes.items())
-            if nid not in valid_ids or not is_node_healthy(n)
-        ]
-
-        connected_nodes = [
-            n
-            for nid, n in internal_nodes.items()
-            if nid in valid_ids and is_node_healthy(n)
-        ]
-        if connected_nodes and not stale_ids:
-            return True
-
-        async with self._node_connect_lock:
-            internal_nodes = getattr(wavelink.Pool, "_Pool__nodes", {})
-            for nid, n in list(internal_nodes.items()):
-                if nid not in valid_ids or not is_node_healthy(n):
-                    old_node = internal_nodes.pop(nid, None)
-                    if old_node:
-                        try:
-                            old_node._retries = 0
-                            old_node._players.clear()
-                            if old_node._websocket is not None:
-                                if old_node._websocket.keep_alive_task:
-                                    old_node._websocket.keep_alive_task.cancel()
-                                if old_node._websocket.socket:
-                                    await old_node._websocket.socket.close()
-                            if old_node._session and not old_node._session.closed:
-                                await old_node._session.close()
-                            old_node._status = wavelink.NodeStatus.DISCONNECTED
-                        except Exception:
-                            pass
-
-            connected_nodes = [
-                n
-                for nid, n in internal_nodes.items()
-                if nid in valid_ids and is_node_healthy(n)
-            ]
-            if connected_nodes:
-                return True
-
-            existing_ids = set(internal_nodes.keys())
-            new_nodes = []
-            for cfg in PUBLIC_LAVALINK_NODES:
-                if cfg["identifier"] not in existing_ids:
-                    new_nodes.append(
-                        wavelink.Node(
-                            identifier=cfg["identifier"],
-                            uri=cfg["uri"],
-                            password=cfg["password"],
-                            inactive_player_timeout=300,
-                            retries=2,
-                        )
-                    )
-
-            if new_nodes:
-                await wavelink.Pool.connect(client=self.bot, nodes=new_nodes)
-
-            for _ in range(16):
-                connected_nodes = [
-                    n
-                    for nid, n in internal_nodes.items()
-                    if nid in valid_ids and is_node_healthy(n)
-                ]
-                if connected_nodes:
-                    return True
-                await asyncio.sleep(0.3)
-
-            return bool(
-                [
-                    n
-                    for nid, n in internal_nodes.items()
-                    if nid in valid_ids and is_node_healthy(n)
-                ]
-            )
+        """確保有一個健康的活躍節點（同一時間只連一個；目前節點掛掉才依序切換備用節點）"""
+        return await self._failover_and_rebind() is not None
 
     def get_connected_nodes(self) -> list[wavelink.Node]:
-        """取得所有已連線且 WebSocket 健康的節點"""
-        valid_ids = {cfg["identifier"] for cfg in PUBLIC_LAVALINK_NODES}
-        internal_nodes: dict[str, wavelink.Node] = getattr(wavelink.Pool, "_Pool__nodes", {})
-        nodes = [
-            n
-            for nid, n in internal_nodes.items()
-            if nid in valid_ids and is_node_healthy(n)
-        ]
-        return sorted(nodes, key=lambda n: (0 if "SSL" in n.identifier else 1, len(n.players)))
+        """取得目前唯一的活躍健康節點（以 list 形式回傳以相容既有呼叫）"""
+        node = get_active_node()
+        return [node] if node is not None else []
 
     async def fetch_bilibili_metadata(self, raw_input: str) -> Optional[dict]:
         """取得 Bilibili 影片資訊與直連串流（網路偶發失敗時自動重試最多 3 次）"""
@@ -1367,6 +1428,8 @@ class Music(commands.Cog):
                     return None
 
             await asyncio.sleep(0.5 * attempt)
+            if last_node_err and not any_valid_empty_response:
+                await self._failover_and_rebind(advance_node=True)
 
         if last_node_err and not any_valid_empty_response:
             raise last_node_err
@@ -1478,14 +1541,16 @@ class Music(commands.Cog):
                 last_err = err
                 logger.warning("第 %d/3 次播放失敗 (節點 %s): %s", attempt, player.node.identifier, err)
 
-                # 若節點回傳 Session 404 或連線異常，由 Cog 強制重建全新 Node 實例並重綁語音狀態（絕不退出語音頻道）
-                if (isinstance(err, wavelink.LavalinkException) and getattr(err, "status", None) == 404) or "404" in str(err):
-                    new_node = await self.rebuild_fresh_node(player)
-                    if new_node:
-                        try:
-                            return await player.play(current_candidate)
-                        except Exception as retry_err:
-                            last_err = retry_err
+                # 若節點回傳 Session 404 或連線異常，由 Cog 強制重建節點（或切換備用節點）並重綁語音狀態（絕不退出語音頻道）
+                is_404 = (isinstance(err, wavelink.LavalinkException) and getattr(err, "status", None) == 404) or "404" in str(err)
+                new_node = await self._failover_and_rebind(
+                    stale_node=player.node, advance_node=(not is_404 and attempt >= 2)
+                )
+                if new_node:
+                    try:
+                        return await player.play(current_candidate)
+                    except Exception as retry_err:
+                        last_err = retry_err
 
                 # 嘗試尋找備援替代音軌後再進入下一輪重試
                 alt_track = await self.find_fallback_track(current_candidate)
@@ -1509,21 +1574,21 @@ class Music(commands.Cog):
             err_view = create_container_view("❌ | 語音連線提示", msg)
             if interaction:
                 if interaction.response.is_done():
-                    await interaction.followup.send(view=err_view, ephemeral=True)
+                    await interaction.followup.send(view=err_view, ephemeral=True, silent=True)
                 else:
-                    await interaction.response.send_message(view=err_view, ephemeral=True)
+                    await interaction.response.send_message(view=err_view, ephemeral=True, silent=True)
             else:
-                await ctx.send(view=err_view)
+                await ctx.send(view=err_view, silent=True)
 
         async def _send_gemini_err(err: object):
             err_view = create_gemini_error_view(err)
             if interaction:
                 if interaction.response.is_done():
-                    await interaction.followup.send(view=err_view)
+                    await interaction.followup.send(view=err_view, silent=True)
                 else:
-                    await interaction.response.send_message(view=err_view)
+                    await interaction.response.send_message(view=err_view, silent=True)
             else:
-                await ctx.send(view=err_view)
+                await ctx.send(view=err_view, silent=True)
 
         if not voice_state or not voice_state.channel:
             await _send_err("你必須先加入一個語音頻道！")
@@ -1600,7 +1665,7 @@ class Music(commands.Cog):
 
         try:
             view = MusicControlView(self, player, track)
-            player.now_playing_message = await player.home_channel.send(view=view)
+            player.now_playing_message = await player.home_channel.send(view=view, silent=True)
         except Exception as e:
             logger.debug("發送正在播放訊息失敗: %s", e)
 
@@ -1629,7 +1694,8 @@ class Music(commands.Cog):
                     await player.home_channel.send(
                         view=create_gemini_error_view(
                             f"歌曲「{failed_track.title}」於節點 {player.node.identifier} 載入失敗 (loadFailed)，連續重試 3 次仍無法播放。"
-                        )
+                        ),
+                        silent=True,
                     )
                 except Exception:
                     pass
@@ -1639,7 +1705,7 @@ class Music(commands.Cog):
                     await self.safe_play(player, next_track)
                 except Exception as e:
                     if player.home_channel:
-                        await player.home_channel.send(view=create_gemini_error_view(e))
+                        await player.home_channel.send(view=create_gemini_error_view(e), silent=True)
 
     @commands.Cog.listener()
     async def on_wavelink_inactive_player(self, player: wavelink.Player):
@@ -1656,7 +1722,8 @@ class Music(commands.Cog):
                     view=create_container_view(
                         "💤 | 自動離開語音頻道",
                         "因為長時間沒有播放音樂或頻道內無人收聽，機器人已自動離開語音頻道。",
-                    )
+                    ),
+                    silent=True,
                 )
             except Exception:
                 pass
@@ -1706,7 +1773,8 @@ class Music(commands.Cog):
                             view=create_container_view(
                                 "👋 | 自動離開語音頻道",
                                 "語音頻道內已無其他成員，機器人已自動離開頻道。",
-                            )
+                            ),
+                            silent=True,
                         )
         except asyncio.CancelledError:
             pass
@@ -1724,7 +1792,8 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "🔊 | 已連線至語音頻道",
                     f"成功加入頻道：`{player.channel.name}`\n目前使用節點：`{player.node.identifier}`",
-                )
+                ),
+                silent=True,
             )
 
     @commands.hybrid_command(name="play", aliases=["p"], description="播放音樂或將歌曲/播放清單加入佇列")
@@ -1738,14 +1807,15 @@ class Music(commands.Cog):
         try:
             tracks = await self.smart_search(query, preferred_node=player.node)
         except Exception as e:
-            return await ctx.send(view=create_gemini_error_view(e))
+            return await ctx.send(view=create_gemini_error_view(e), silent=True)
 
         if not tracks:
             return await ctx.send(
                 view=create_container_view(
                     "❌ | 找不到歌曲",
                     f"找不到與 `{query}` 相關的歌曲，請嘗試其他關鍵字或網址。",
-                )
+                ),
+                silent=True,
             )
 
         is_playlist = (
@@ -1763,7 +1833,8 @@ class Music(commands.Cog):
                     "📋 | 已加入播放清單",
                     f"### {tracks.name}\n共成功加入 **{added}** 首歌曲至待播清單！",
                     thumbnail_url=tracks.artwork,
-                )
+                ),
+                silent=True,
             )
         else:
             track = tracks[0]
@@ -1781,7 +1852,8 @@ class Music(commands.Cog):
                             f"🔢 **佇列位置**：`#{len(player.queue)}`"
                         ),
                         thumbnail_url=track.artwork,
-                    )
+                    ),
+                    silent=True,
                 )
             else:
                 await ctx.send(
@@ -1789,7 +1861,8 @@ class Music(commands.Cog):
                         "🔎 | 準備播放",
                         f"已找到：**[{track.title}]({track.uri or 'https://youtube.com'})**，準備開始播放...",
                         thumbnail_url=track.artwork,
-                    )
+                    ),
+                    silent=True,
                 )
 
         if not player.playing and not player.paused and not player.queue.is_empty:
@@ -1797,7 +1870,7 @@ class Music(commands.Cog):
             try:
                 await self.safe_play(player, next_track)
             except Exception as e:
-                await ctx.send(view=create_gemini_error_view(e))
+                await ctx.send(view=create_gemini_error_view(e), silent=True)
 
     @commands.hybrid_command(name="search", aliases=["find"], description="搜尋歌曲並從選單中挑選要播放的曲目")
     @app_commands.describe(query="要搜尋的歌曲名稱或關鍵字")
@@ -1808,21 +1881,23 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 語音頻道限制",
                     "你必須先加入一個語音頻道！",
-                )
+                ),
+                silent=True,
             )
 
         vc_player: Optional[MusicPlayer] = ctx.voice_client  # type: ignore
         try:
             tracks = await self.smart_search(query, preferred_node=getattr(vc_player, "node", None))
         except Exception as e:
-            return await ctx.send(view=create_gemini_error_view(e))
+            return await ctx.send(view=create_gemini_error_view(e), silent=True)
 
         if not tracks:
             return await ctx.send(
                 view=create_container_view(
                     "❌ | 找不到搜尋結果",
                     f"找不到與 `{query}` 相關的搜尋結果。",
-                )
+                ),
+                silent=True,
             )
 
         track_list = tracks.tracks if isinstance(tracks, wavelink.Playlist) else list(tracks)
@@ -1831,10 +1906,11 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 找不到搜尋結果",
                     f"找不到與 `{query}` 相關的搜尋結果。",
-                )
+                ),
+                silent=True,
             )
 
-        await ctx.send(view=SearchView(self, ctx, query, track_list[:10]))
+        await ctx.send(view=SearchView(self, ctx, query, track_list[:10]), silent=True)
 
     @commands.hybrid_command(name="pause", description="暫停目前播放的音樂")
     async def pause(self, ctx: commands.Context):
@@ -1844,18 +1920,20 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 無法暫停",
                     "目前沒有正在播放的音樂。",
-                )
+                ),
+                silent=True,
             )
         if player.paused:
             return await ctx.send(
                 view=create_container_view(
                     "⏸️ | 已經暫停",
                     "音樂已經處於暫停狀態，輸入 `*resume` 可繼續播放。",
-                )
+                ),
+                silent=True,
             )
 
         await player.pause(True)
-        await ctx.send(view=create_container_view("⏸️ | 已暫停播放", "已暫停目前播放的音樂。"))
+        await ctx.send(view=create_container_view("⏸️ | 已暫停播放", "已暫停目前播放的音樂。"), silent=True)
 
     @commands.hybrid_command(name="resume", aliases=["unpause"], description="繼續播放已暫停的音樂")
     async def resume(self, ctx: commands.Context):
@@ -1865,13 +1943,14 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 無法繼續播放",
                     "目前沒有可繼續播放的音樂。",
-                )
+                ),
+                silent=True,
             )
         if not player.paused:
-            return await ctx.send(view=create_container_view("▶️ | 播放中", "音樂目前已經在播放中。"))
+            return await ctx.send(view=create_container_view("▶️ | 播放中", "音樂目前已經在播放中。"), silent=True)
 
         await player.pause(False)
-        await ctx.send(view=create_container_view("▶️ | 已繼續播放", "已繼續播放音樂。"))
+        await ctx.send(view=create_container_view("▶️ | 已繼續播放", "已繼續播放音樂。"), silent=True)
 
     @commands.hybrid_command(name="skip", aliases=["s", "next"], description="跳過目前播放的歌曲")
     async def skip(self, ctx: commands.Context):
@@ -1881,7 +1960,8 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 無法跳過",
                     "目前沒有可跳過的音樂。",
-                )
+                ),
+                silent=True,
             )
 
         title = player.current.title
@@ -1894,7 +1974,7 @@ class Music(commands.Cog):
                 if not player.queue.is_empty:
                     next_t = await player.queue.get_wait()
                     await self.safe_play(player, next_t)
-        await ctx.send(view=create_container_view("⏭️ | 已跳過歌曲", f"已跳過：**{title}**"))
+        await ctx.send(view=create_container_view("⏭️ | 已跳過歌曲", f"已跳過：**{title}**"), silent=True)
 
     @commands.hybrid_command(name="stop", aliases=["leave", "disconnect", "dc"], description="停止播放、清空佇列並離開語音頻道")
     async def stop(self, ctx: commands.Context):
@@ -1904,13 +1984,14 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 未連線",
                     "機器人目前不在任何語音頻道中。",
-                )
+                ),
+                silent=True,
             )
 
         player.queue.clear()
         player.auto_queue.clear()
         await player.disconnect()
-        await ctx.send(view=create_container_view("⏹️ | 已停止播放", "已清空播放清單並離開語音頻道。"))
+        await ctx.send(view=create_container_view("⏹️ | 已停止播放", "已清空播放清單並離開語音頻道。"), silent=True)
 
     @commands.hybrid_command(name="queue", aliases=["q", "playlist"], description="查看目前的音樂播放清單")
     async def queue(self, ctx: commands.Context):
@@ -1920,14 +2001,18 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 未連線",
                     "機器人目前尚未連線至語音頻道。",
-                )
+                ),
+                silent=True,
             )
 
         if not player.current and player.queue.is_empty:
-            return await ctx.send(view=create_container_view("📭 | 播放清單是空的", "目前沒有正在播放或排隊中的歌曲。"))
+            return await ctx.send(
+                view=create_container_view("📭 | 播放清單是空的", "目前沒有正在播放或排隊中的歌曲。"),
+                silent=True,
+            )
 
         view = QueuePaginationView(player, ctx.author.id)
-        await ctx.send(view=view)
+        await ctx.send(view=view, silent=True)
 
     @commands.hybrid_command(name="nowplaying", aliases=["np", "current"], description="顯示目前正在播放的歌曲資訊與控制面板")
     async def nowplaying(self, ctx: commands.Context):
@@ -1937,10 +2022,11 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 無播放曲目",
                     "目前沒有正在播放的歌曲。",
-                )
+                ),
+                silent=True,
             )
 
-        await ctx.send(view=MusicControlView(self, player, player.current))
+        await ctx.send(view=MusicControlView(self, player, player.current), silent=True)
 
     @commands.hybrid_command(name="volume", aliases=["vol", "v"], description="調整或查看播放器音量 (1~100)")
     @app_commands.describe(level="音量大小 (1 ~ 100)")
@@ -1951,22 +2037,28 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 未連線",
                     "機器人目前尚未連線至語音頻道。",
-                )
+                ),
+                silent=True,
             )
 
         if level is None:
-            return await ctx.send(view=create_container_view("🔊 | 目前音量", f"目前播放器音量為：**{player.volume}%**"))
+            return await ctx.send(
+                view=create_container_view("🔊 | 目前音量", f"目前播放器音量為：**{player.volume}%**"),
+                silent=True,
+            )
 
         if not 1 <= level <= 100:
             return await ctx.send(
                 view=create_container_view(
                     "❌ | 音量範圍錯誤",
                     "音量範圍請設定在 `1` 到 `100` 之間！",
-                )
+                ),
+                silent=True,
             )
 
+        player._volume_customized = True
         await player.set_volume(level)
-        await ctx.send(view=create_container_view("🔊 | 音量已調整", f"已將音量調整為：**{level}%**"))
+        await ctx.send(view=create_container_view("🔊 | 音量已調整", f"已將音量調整為：**{level}%**"), silent=True)
 
     @commands.hybrid_command(name="loop", aliases=["repeat"], description="切換循環模式 (off / track / queue)")
     @app_commands.describe(mode="選擇循環模式：關閉 (off)、單曲循環 (track) 或清單循環 (queue)")
@@ -1984,30 +2076,40 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 未連線",
                     "機器人目前尚未連線至語音頻道。",
-                )
+                ),
+                silent=True,
             )
 
         if mode:
             m = mode.lower().strip()
             if m in ("off", "normal", "none", "關閉", "0"):
                 player.queue.mode = wavelink.QueueMode.normal
-                return await ctx.send(view=create_container_view("➡️ | 循環模式更新", "已將循環模式設為：**關閉循環**"))
+                return await ctx.send(
+                    view=create_container_view("➡️ | 循環模式更新", "已將循環模式設為：**關閉循環**"),
+                    silent=True,
+                )
             elif m in ("track", "single", "song", "單曲", "1"):
                 player.queue.mode = wavelink.QueueMode.loop
-                return await ctx.send(view=create_container_view("🔂 | 循環模式更新", "已將循環模式設為：**單曲循環**"))
+                return await ctx.send(
+                    view=create_container_view("🔂 | 循環模式更新", "已將循環模式設為：**單曲循環**"),
+                    silent=True,
+                )
             elif m in ("queue", "all", "清單", "2"):
                 player.queue.mode = wavelink.QueueMode.loop_all
-                return await ctx.send(view=create_container_view("🔁 | 循環模式更新", "已將循環模式設為：**整個清單循環**"))
+                return await ctx.send(
+                    view=create_container_view("🔁 | 循環模式更新", "已將循環模式設為：**整個清單循環**"),
+                    silent=True,
+                )
 
         if player.queue.mode is wavelink.QueueMode.normal:
             player.queue.mode = wavelink.QueueMode.loop
-            await ctx.send(view=create_container_view("🔂 | 循環模式切換", "已切換為：**單曲循環**"))
+            await ctx.send(view=create_container_view("🔂 | 循環模式切換", "已切換為：**單曲循環**"), silent=True)
         elif player.queue.mode is wavelink.QueueMode.loop:
             player.queue.mode = wavelink.QueueMode.loop_all
-            await ctx.send(view=create_container_view("🔁 | 循環模式切換", "已切換為：**整個清單循環**"))
+            await ctx.send(view=create_container_view("🔁 | 循環模式切換", "已切換為：**整個清單循環**"), silent=True)
         else:
             player.queue.mode = wavelink.QueueMode.normal
-            await ctx.send(view=create_container_view("➡️ | 循環模式切換", "已切換為：**關閉循環**"))
+            await ctx.send(view=create_container_view("➡️ | 循環模式切換", "已切換為：**關閉循環**"), silent=True)
 
     @commands.hybrid_command(name="shuffle", aliases=["random"], description="隨機打亂待播清單中的歌曲順序")
     async def shuffle(self, ctx: commands.Context):
@@ -2017,14 +2119,16 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 無法打亂",
                     "待播清單目前是空的。",
-                )
+                ),
+                silent=True,
             )
         if len(player.queue) < 2:
             return await ctx.send(
                 view=create_container_view(
                     "❌ | 歌曲數量不足",
                     "待播清單至少需要 2 首歌曲才能進行隨機打亂。",
-                )
+                ),
+                silent=True,
             )
 
         player.queue.shuffle()
@@ -2032,7 +2136,8 @@ class Music(commands.Cog):
             view=create_container_view(
                 "🔀 | 已隨機打亂",
                 f"已成功隨機打亂待播清單中的 **{len(player.queue)}** 首歌曲！",
-            )
+            ),
+            silent=True,
         )
 
     @commands.hybrid_command(name="remove", aliases=["rm", "delete"], description="從待播清單中移除指定編號的歌曲")
@@ -2044,7 +2149,8 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 待播清單為空",
                     "待播清單目前是空的。",
-                )
+                ),
+                silent=True,
             )
 
         if not 1 <= index <= len(player.queue):
@@ -2052,7 +2158,8 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 編號超出範圍",
                     f"請輸入 `1` 到 `{len(player.queue)}` 之間的數字。",
-                )
+                ),
+                silent=True,
             )
 
         removed_track = player.queue[index - 1]
@@ -2061,18 +2168,25 @@ class Music(commands.Cog):
             view=create_container_view(
                 "🗑️ | 已移除歌曲",
                 f"已從待播清單中移除：`#{index}` **{removed_track.title}**",
-            )
+            ),
+            silent=True,
         )
 
     @commands.hybrid_command(name="clear", description="清空待播清單中的所有歌曲")
     async def clear(self, ctx: commands.Context):
         player: Optional[MusicPlayer] = ctx.voice_client  # type: ignore
         if not player or player.queue.is_empty:
-            return await ctx.send(view=create_container_view("📭 | 待播清單已空", "待播清單已經是空的。"))
+            return await ctx.send(
+                view=create_container_view("📭 | 待播清單已空", "待播清單已經是空的。"),
+                silent=True,
+            )
 
         count = len(player.queue)
         player.queue.clear()
-        await ctx.send(view=create_container_view("🧹 | 已清空待播清單", f"已清空待播清單中的 **{count}** 首歌曲。"))
+        await ctx.send(
+            view=create_container_view("🧹 | 已清空待播清單", f"已清空待播清單中的 **{count}** 首歌曲。"),
+            silent=True,
+        )
 
     @commands.hybrid_command(name="seek", description="跳轉至目前歌曲的指定時間 (例如 90 或 1:30)")
     @app_commands.describe(position="輸入秒數 (例如 90) 或時間格式 (例如 1:30)")
@@ -2083,7 +2197,8 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 無播放曲目",
                     "目前沒有正在播放的歌曲。",
-                )
+                ),
+                silent=True,
             )
 
         if not player.current.is_seekable or player.current.is_stream:
@@ -2091,7 +2206,8 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 不支援跳轉",
                     "目前播放的音源（如直播串流）不支援時間跳轉。",
-                )
+                ),
+                silent=True,
             )
 
         target_ms = parse_time_to_ms(position)
@@ -2100,7 +2216,8 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 時間格式錯誤",
                     "請輸入秒數（如 `90`）或 `分:秒`（如 `1:30`）。",
-                )
+                ),
+                silent=True,
             )
 
         if target_ms < 0 or target_ms > player.current.length:
@@ -2108,7 +2225,8 @@ class Music(commands.Cog):
                 view=create_container_view(
                     "❌ | 超出長度範圍",
                     f"請輸入 `00:00` ~ `{format_duration(player.current.length)}` 之間的時間！",
-                )
+                ),
+                silent=True,
             )
 
         await player.seek(target_ms)
@@ -2116,33 +2234,35 @@ class Music(commands.Cog):
             view=create_container_view(
                 "⏩ | 已跳轉時間",
                 f"目前進度：`{format_duration(target_ms)} / {format_duration(player.current.length)}`",
-            )
+            ),
+            silent=True,
         )
 
     @commands.hybrid_command(name="nodes", aliases=["lavalink"], description="查看目前音樂節點的連線狀態")
     async def nodes(self, ctx: commands.Context):
         await ctx.defer()
         await self.ensure_nodes_connected()
-        if not wavelink.Pool.nodes:
-            return await ctx.send(
-                view=create_container_view(
-                    "❌ | 尚無節點",
-                    "目前尚未註冊任何 Lavalink 節點。",
-                )
-            )
+        active = get_active_node()
 
         lines = []
-        for node in wavelink.Pool.nodes.values():
-            status_emoji = "🟢" if node.status is wavelink.NodeStatus.CONNECTED else "🔴"
-            lines.append(
-                f"{status_emoji} **{node.identifier}** (`{node.uri}`) - 狀態：`{node.status.name}` ｜ 播放器數：`{len(node.players)}`"
-            )
+        for idx, cfg in enumerate(PUBLIC_LAVALINK_NODES, start=1):
+            if active is not None and active.identifier == cfg["identifier"]:
+                lines.append(
+                    f"🟢 **{cfg['identifier']}** (`{cfg['uri']}`) - **使用中** ｜ 播放器數：`{len(active.players)}`"
+                )
+            else:
+                lines.append(f"⚪ **{cfg['identifier']}** (`{cfg['uri']}`) - 備用（第 {idx} 順位，未連線）")
+
+        if active is None:
+            lines.insert(0, "🔴 目前所有節點皆無法連線！")
 
         await ctx.send(
             view=create_container_view(
                 "🛰️ | Lavalink 音樂節點狀態",
                 "\n".join(lines),
-            )
+                footer="同一時間只連線一個節點，目前節點掛掉時才會自動依序切換備用節點",
+            ),
+            silent=True,
         )
 
 
